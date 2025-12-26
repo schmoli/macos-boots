@@ -41,17 +41,16 @@ exec "$HOME/.config/macos-setup/repo/run.sh" "$@"
 WRAPPER
 chmod +x "$BINARY_DIR/macos-setup"
 
-echo ""
 echo "Installed to: $BINARY_DIR/macos-setup"
 
-# Check if PATH includes binary dir
-if [[ ":$PATH:" != *":$BINARY_DIR:"* ]]; then
-  echo ""
-  echo "Add to PATH (add to ~/.zshrc):"
-  echo "  export PATH=\"$BINARY_DIR:\$PATH\""
-  echo ""
-  echo "Then run: macos-setup"
-else
-  echo ""
-  echo "Run: macos-setup"
+# Add to PATH if not already there
+if ! grep -q "$BINARY_DIR" ~/.zshrc 2>/dev/null; then
+  echo "" >> ~/.zshrc
+  echo "# macos-setup" >> ~/.zshrc
+  echo "export PATH=\"$BINARY_DIR:\$PATH\"" >> ~/.zshrc
+  echo "Added $BINARY_DIR to PATH in ~/.zshrc"
 fi
+
+echo ""
+echo "Run: macos-setup"
+echo "(You may need to restart your terminal or run: source ~/.zshrc)"

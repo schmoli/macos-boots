@@ -6,16 +6,7 @@ TUI app for setting up a fresh macOS developer machine (Apple Silicon only).
 
 ```zsh
 curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
-```
-
-Then add to PATH (if not already):
-```zsh
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-## Run
-
-```zsh
+source ~/.zshrc
 macos-setup
 ```
 
