@@ -4,33 +4,26 @@ TUI app for setting up a fresh macOS developer machine (Apple Silicon only).
 
 ## Install
 
-**First, install Xcode Command Line Tools** (if not already):
-```zsh
-xcode-select --install
-```
-
-**Then run:**
 ```zsh
 curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
+```
+
+If Xcode CLT not installed, it will tell you to run `xcode-select --install` first.
+
+Then:
+```zsh
 source ~/.zshrc
 macos-setup
 ```
 
-This installs Homebrew, Go, clones the repo, builds the binary, and adds to PATH.
+First run installs Homebrew + Go, builds the TUI, and launches it.
 
 ## Update
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
-```
-
-## Development
-
-```zsh
-git clone https://github.com/schmoli/macos-setup.git
-cd macos-setup
-go build -o bin/macos-setup ./cmd/macos-setup/
-./bin/macos-setup
+cd ~/.config/macos-setup/repo && git pull
+rm -f bin/macos-setup  # force rebuild
+macos-setup
 ```
 
 ## Requirements

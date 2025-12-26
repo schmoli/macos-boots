@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Bootstrap script for macos-setup
+# Bootstrap: downloads files, sets up PATH, checks prerequisites
 # Usage: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
 
 set -e
@@ -7,11 +7,8 @@ set -e
 REPO="schmoli/macos-setup"
 REPO_DIR="$HOME/.config/macos-setup/repo"
 BINARY_DIR="$HOME/.local/bin"
-BINARY="$REPO_DIR/bin/macos-setup"
 
-# Colors
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;36m'
 NC='\033[0m'
 
@@ -22,76 +19,49 @@ echo ""
 
 # Require Apple Silicon
 if [[ "$(uname -m)" != "arm64" ]]; then
-  echo "${YELLOW}Error:${NC} Apple Silicon required"
+  echo "Error: Apple Silicon required"
   exit 1
 fi
 
-# Require Xcode CLI Tools - if missing, show nice message and exit
-if ! xcode-select -p &>/dev/null; then
-  echo "Welcome! Before we can set up your Mac, we need"
-  echo "Xcode Command Line Tools installed."
-  echo ""
-  echo "${BLUE}Run this:${NC}"
-  echo ""
-  echo "    xcode-select --install"
-  echo ""
-  echo "Complete the installation, then re-run:"
-  echo ""
-  echo "    curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh"
-  echo ""
-  exit 0
-fi
-echo "${BLUE}✓${NC} Xcode Command Line Tools"
+# Download repo (use curl+tar since git might not exist yet)
+mkdir -p "$REPO_DIR"
+echo "Downloading..."
+curl -fsSL "https://github.com/$REPO/archive/refs/heads/main.tar.gz" | tar -xz -C "$REPO_DIR" --strip-components=1
+echo "${BLUE}✓${NC} Downloaded to ~/.config/macos-setup/repo"
 
-# Install Homebrew if needed
-if ! command -v brew &>/dev/null; then
-  echo "${BLUE}→${NC} Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-fi
-echo "${BLUE}✓${NC} Homebrew"
-
-# Install Go if needed
-if ! command -v go &>/dev/null; then
-  echo "${BLUE}→${NC} Installing Go..."
-  brew install go
-fi
-echo "${BLUE}✓${NC} Go"
-
-# Clone or update repo
-mkdir -p "$(dirname "$REPO_DIR")"
-if [[ -d "$REPO_DIR/.git" ]]; then
-  echo "${BLUE}→${NC} Updating repo..."
-  git -C "$REPO_DIR" pull --rebase --quiet
-else
-  echo "${BLUE}→${NC} Cloning repo..."
-  git clone --quiet "https://github.com/$REPO.git" "$REPO_DIR"
-fi
-echo "${BLUE}✓${NC} Repo"
-
-# Build binary
-echo "${BLUE}→${NC} Building..."
-mkdir -p "$(dirname "$BINARY")"
-(cd "$REPO_DIR" && go build -o "$BINARY" ./cmd/macos-setup/)
-echo "${BLUE}✓${NC} Built"
-
-# Create wrapper in PATH
+# Create wrapper script
 mkdir -p "$BINARY_DIR"
-cat > "$BINARY_DIR/macos-setup" << WRAPPER
+cat > "$BINARY_DIR/macos-setup" << 'WRAPPER'
 #!/bin/zsh
-eval "\$(/opt/homebrew/bin/brew shellenv)"
-exec "$BINARY" "\$@"
+exec "$HOME/.config/macos-setup/repo/setup.sh" "$@"
 WRAPPER
 chmod +x "$BINARY_DIR/macos-setup"
+echo "${BLUE}✓${NC} Created ~/.local/bin/macos-setup"
 
 # Add to PATH if needed
 if ! grep -q "$BINARY_DIR" ~/.zshrc 2>/dev/null; then
   echo "" >> ~/.zshrc
   echo "# macos-setup" >> ~/.zshrc
   echo "export PATH=\"$BINARY_DIR:\$PATH\"" >> ~/.zshrc
+  echo "${BLUE}✓${NC} Added to PATH in ~/.zshrc"
 fi
 
 echo ""
-echo "${GREEN}Ready!${NC}"
+
+# Check CLT and give appropriate instructions
+if ! xcode-select -p &>/dev/null; then
+  echo "Almost ready! First install Xcode Command Line Tools:"
+  echo ""
+  echo "    xcode-select --install"
+  echo ""
+  echo "Then:"
+  echo ""
+  echo "    source ~/.zshrc"
+  echo "    macos-setup"
+else
+  echo "Ready! Run:"
+  echo ""
+  echo "    source ~/.zshrc"
+  echo "    macos-setup"
+fi
 echo ""
-echo "Run:  source ~/.zshrc && macos-setup"
