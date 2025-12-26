@@ -18,24 +18,28 @@ NC='\033[0m'
 echo ""
 echo "${GREEN}macos-setup${NC}"
 echo "==========="
+echo ""
 
 # Require Apple Silicon
 if [[ "$(uname -m)" != "arm64" ]]; then
-  echo "Error: Apple Silicon only"
+  echo "${YELLOW}Error:${NC} Apple Silicon required"
   exit 1
 fi
 
-# Require Xcode CLI Tools - if missing, tell user and exit
+# Require Xcode CLI Tools - if missing, show nice message and exit
 if ! xcode-select -p &>/dev/null; then
+  echo "Welcome! Before we can set up your Mac, we need"
+  echo "Xcode Command Line Tools installed."
   echo ""
-  echo "${YELLOW}Xcode Command Line Tools required${NC}"
-  echo ""
-  echo "Run this command and complete the installation:"
+  echo "${BLUE}Run this:${NC}"
   echo ""
   echo "    xcode-select --install"
   echo ""
-  echo "Then re-run this script."
-  exit 1
+  echo "Complete the installation, then re-run:"
+  echo ""
+  echo "    curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh"
+  echo ""
+  exit 0
 fi
 echo "${BLUE}✓${NC} Xcode Command Line Tools"
 
