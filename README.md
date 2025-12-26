@@ -5,7 +5,7 @@ TUI app for setting up a fresh macOS developer machine (Apple Silicon only).
 ## Install
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
+curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh -o /tmp/install.sh && zsh /tmp/install.sh
 ```
 
 This will:

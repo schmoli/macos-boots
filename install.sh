@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Bootstrap script for macos-setup
-# Usage: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
+# Usage: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh -o /tmp/install.sh && zsh /tmp/install.sh
 
 set -e
 
@@ -9,7 +9,7 @@ if ! xcode-select -p &>/dev/null; then
   echo "Installing Xcode Command Line Tools..."
   xcode-select --install
   echo "Press Enter after Xcode tools finish installing..."
-  read
+  read </dev/tty
 fi
 
 REPO="schmoli/macos-setup"
