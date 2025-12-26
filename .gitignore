@@ -3,9 +3,9 @@
 /macos-setup-darwin-arm64
 *.exe
 
-# Build
+# Build output
+/bin/
 dist/
-bin/
 
 # Go
 go.sum

@@ -5,38 +5,47 @@ TUI app for setting up a fresh macOS developer machine (Apple Silicon only).
 ## Install
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh -o /tmp/install.sh && zsh /tmp/install.sh
+curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
 ```
 
-This will:
-1. Install Xcode Command Line Tools (if needed)
-2. Install Homebrew (if needed)
-3. Install Go (if needed)
-4. Clone this repo to `~/.config/macos-setup/repo/`
-5. Build and install binary to `~/.local/bin/macos-setup`
+Then add to PATH (if not already):
+```zsh
+export PATH="$HOME/.local/bin:$PATH"
+```
 
-## Update
-
-Run the install script again - it pulls latest and rebuilds.
-
-## Usage
+## Run
 
 ```zsh
 macos-setup
 ```
 
+**First run** will install prerequisites:
+- Xcode Command Line Tools (may show dialog)
+- Homebrew
+- Go
+
+Then launches the TUI.
+
+**Subsequent runs** go straight to TUI.
+
+## Update
+
+```zsh
+curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
+```
+
+Or manually:
+```zsh
+cd ~/.config/macos-setup/repo && git pull
+```
+
 ## Development
 
 ```zsh
-# Clone
 git clone https://github.com/schmoli/macos-setup.git
 cd macos-setup
-
-# Build
-go build -o macos-setup ./cmd/macos-setup/
-
-# Run
-./macos-setup
+go build -o bin/macos-setup ./cmd/macos-setup/
+./bin/macos-setup
 ```
 
 ## Requirements
