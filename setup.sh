@@ -63,7 +63,7 @@ echo "${BLUE}✓${NC} Repo"
 # Build
 echo "${BLUE}→${NC} Building..."
 mkdir -p "$(dirname "$BINARY")"
-(cd "$REPO_DIR" && go build -o "$BINARY" ./cmd/macos-setup/)
+(cd "$REPO_DIR" && go mod tidy && go build -o "$BINARY" ./cmd/macos-setup/)
 echo "${BLUE}✓${NC} Built"
 
 echo ""

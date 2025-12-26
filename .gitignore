@@ -8,7 +8,7 @@
 dist/
 
 # Go
-go.sum
+# go.sum is committed to ensure reproducible builds
 
 # IDE
 .idea/
