@@ -1,0 +1,24 @@
+# Binaries (root level only)
+/macos-setup
+/macos-setup-darwin-arm64
+*.exe
+
+# Build
+dist/
+bin/
+
+# Go
+go.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# State (generated at runtime)
+state.json
