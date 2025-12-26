@@ -42,21 +42,11 @@ First run installs Homebrew and Go, builds the TUI, then launches it.
 
 ## Update
 
-Re-run the install command to pull latest:
-
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
-macos-setup
+macos-setup update
 ```
 
-Or manually:
-
-```zsh
-cd ~/.config/macos-setup/repo
-git pull
-rm -f bin/macos-setup
-macos-setup
-```
+This pulls the latest code and rebuilds.
 
 ## Uninstall
 
