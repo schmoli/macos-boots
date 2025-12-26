@@ -1,4 +1,4 @@
-module github.com/toli/macos-setup
+module github.com/schmoli/macos-setup
 
 go 1.25.5
 

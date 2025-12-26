@@ -36,17 +36,15 @@ echo "================================"
 echo ""
 
 # Homebrew
-if ! command -v brew &>/dev/null; then
+if [[ ! -x "/opt/homebrew/bin/brew" ]]; then
   echo "${BLUE}→${NC} Installing Homebrew..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-else
-  eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
+eval "$(/opt/homebrew/bin/brew shellenv)"
 echo "${BLUE}✓${NC} Homebrew"
 
 # Go
-if ! command -v go &>/dev/null; then
+if [[ ! -x "$(brew --prefix)/bin/go" ]]; then
   echo "${BLUE}→${NC} Installing Go..."
   brew install go
 fi

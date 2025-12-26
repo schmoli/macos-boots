@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/toli/macos-setup/internal/tui"
+	"github.com/schmoli/macos-setup/internal/tui"
 )
 
 func main() {
