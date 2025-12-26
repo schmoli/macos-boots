@@ -4,11 +4,20 @@
 
 set -e
 
+# Install Xcode CLI tools FIRST (everything else depends on this)
+if ! xcode-select -p &>/dev/null; then
+  echo "Installing Xcode Command Line Tools..."
+  xcode-select --install
+  echo "Press Enter after Xcode tools finish installing..."
+  read
+fi
+
 REPO="schmoli/macos-setup"
 REPO_DIR="$HOME/.config/macos-setup/repo"
 BINARY_DIR="$HOME/.local/bin"
 BINARY="macos-setup"
 
+echo ""
 echo "macos-setup bootstrap"
 echo "====================="
 
@@ -18,14 +27,6 @@ if [[ "$(uname -m)" != "arm64" ]]; then
   exit 1
 fi
 echo "Detected: Apple Silicon"
-
-# Install Xcode CLI tools if needed
-if ! xcode-select -p &>/dev/null; then
-  echo "Installing Xcode Command Line Tools..."
-  xcode-select --install
-  echo "Press Enter after Xcode tools finish installing..."
-  read
-fi
 
 # Install Homebrew if needed
 if ! command -v brew &>/dev/null; then
