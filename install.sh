@@ -7,9 +7,9 @@ set -e
 # Install Xcode CLI tools FIRST (everything else depends on this)
 if ! xcode-select -p &>/dev/null; then
   echo "Installing Xcode Command Line Tools..."
-  xcode-select --install
-  echo "Press Enter after Xcode tools finish installing..."
-  read </dev/tty
+  touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+  sudo softwareupdate -i "$(softwareupdate -l | grep -o 'Command Line Tools.*' | head -1)" --agree-to-license
+  rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
 fi
 
 REPO="schmoli/macos-setup"
