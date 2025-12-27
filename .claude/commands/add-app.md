@@ -51,9 +51,13 @@ Keywords: `to`, `depends on`, `wip` (order flexible)
 8. **Apply** - Edit apps.yaml, insert in alphabetical order within category section
 
 9. **Commit** (unless `wip`):
+   - First check `git diff apps.yaml` for ALL uncommitted app additions
+   - Parse diff to find all new app keys (lines starting with `+  <name>:`)
+   - Chain multiple apps in commit message: `feat(apps): add app1, app2 to <category>`
+   - If apps span multiple categories, group by category or use generic message
    ```bash
-   git add apps.yaml
-   git commit -m "feat(apps): add <app> to <category>"
+   git add apps.yaml docs/skills/add-app/history.md
+   git commit -m "feat(apps): add app1, app2 to cli"
    git push
    ```
 
@@ -66,7 +70,15 @@ Keywords: `to`, `depends on`, `wip` (order flexible)
 
 ```
 /add-app vscode to dev
-/add-app wip jq to cli
 /add-app docker-compose to dev depends on docker
 /add-app something for markdown editing
+```
+
+### Batching with wip
+
+```
+/add-app wip jq to cli       # adds jq, no commit
+/add-app wip yq to cli       # adds yq, no commit
+/add-app bat to cli          # adds bat, commits all three
+                             # → "feat(apps): add jq, yq, bat to cli"
 ```
