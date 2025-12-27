@@ -76,7 +76,7 @@ if [[ -d "$REPO_DIR/.git" ]]; then
 else
   echo "${CYAN}⏳ Cloning repo...${NC}"
   mkdir -p "$(dirname "$REPO_DIR")"
-  git clone --quiet "https://github.com/$REPO/macos-setup.git" "$REPO_DIR"
+  git clone --quiet "https://github.com/$REPO.git" "$REPO_DIR"
 fi
 echo "${GREEN}✅ Repo${NC}"
 
