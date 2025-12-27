@@ -82,6 +82,12 @@ apps:
     tier: auto
     description: GitHub command-line tool
 
+  gitui:
+    install: brew
+    category: cli
+    tier: auto
+    description: Blazing fast terminal UI for git
+
   glow:
     install: brew
     category: cli
