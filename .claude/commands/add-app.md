@@ -22,8 +22,9 @@ Keywords: `to`, `depends on`, `wip` (order flexible)
    - `wip` flag (skip commit if present)
 
 3. **Resolve app**
-   - Run `brew search <name>` and `brew search --cask <name>`
-   - If exact match, use it
+   - First try `brew info <name>` (more reliable for exact matches)
+   - If not found, try `brew info --cask <name>`
+   - If neither works, fall back to `brew search` for suggestions
    - If multiple/ambiguous, ask user to clarify
    - Infer install type from source (formula → brew, cask → cask)
 

@@ -65,15 +65,12 @@ Omit tier field for auto behavior.
 ## Verification Commands
 
 ```bash
-# Check if brew package exists
-brew search <name>
-
-# Check if cask exists
-brew search --cask <name>
-
-# Get package info
+# Primary: use brew info (more reliable for exact matches)
 brew info <name>
 brew info --cask <name>
+
+# Fallback: search for suggestions if info fails
+brew search <name>
 
 # Check npm package
 npm search <name>
