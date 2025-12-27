@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/schmoli/macos-setup/internal/config"
+	"github.com/schmoli/macos-setup/internal/state"
 	"github.com/schmoli/macos-setup/internal/tui"
 )
 
@@ -205,6 +206,11 @@ func runInstallAll() error {
 				failed = append(failed, name)
 				continue
 			}
+		}
+
+		// Track in state file
+		if s, err := state.Load(); err == nil {
+			s.MarkInstalled(name)
 		}
 
 		// Add zsh integration if defined

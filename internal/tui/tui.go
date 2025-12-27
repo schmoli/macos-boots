@@ -14,6 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/schmoli/macos-setup/internal/config"
+	"github.com/schmoli/macos-setup/internal/state"
 )
 
 var (
@@ -730,6 +731,11 @@ func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd
 	status := "✓"
 	if !msg.success {
 		status = "✗"
+	} else {
+		// Track in state file
+		if s, err := state.Load(); err == nil {
+			s.MarkInstalled(msg.name)
+		}
 	}
 	m.installResults = append(m.installResults, fmt.Sprintf("%s %s", status, msg.name))
 
@@ -774,6 +780,11 @@ func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) 
 	status := "✓"
 	if !msg.success {
 		status = "✗"
+	} else {
+		// Track in state file
+		if s, err := state.Load(); err == nil {
+			s.MarkRemoved(msg.name)
+		}
 	}
 	m.installResults = append(m.installResults, fmt.Sprintf("%s %s", status, msg.name))
 
