@@ -61,19 +61,20 @@ apps:
     zsh: |
       eval "$(zoxide init zsh)"
 
-  aws-cdk:
-    install: brew
-    category: cli
-    tier: auto
-    description: AWS Cloud Development Kit
-    depends:
-      - fnm
-
-  awscli:
-    install: brew
-    category: cli
-    tier: auto
-    description: Official AWS command-line interface
+  # TODO: needs python env manager (pyenv/uv) first
+  # aws-cdk:
+  #   install: brew
+  #   category: cli
+  #   tier: auto
+  #   description: AWS Cloud Development Kit
+  #   depends:
+  #     - fnm
+  #
+  # awscli:
+  #   install: brew
+  #   category: cli
+  #   tier: auto
+  #   description: Official AWS command-line interface
 
   gh:
     install: brew
