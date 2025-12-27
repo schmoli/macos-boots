@@ -48,6 +48,8 @@ if ! grep -q '/opt/homebrew/bin/brew shellenv' ~/.zshrc 2>/dev/null; then
   echo "" >> ~/.zshrc
   echo "# Homebrew" >> ~/.zshrc
   echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
+  # Mark that we modified zshrc
+  touch "$HOME/.config/macos-setup/.zshrc-modified"
 fi
 echo "${BLUE}✓${NC} Homebrew"
 

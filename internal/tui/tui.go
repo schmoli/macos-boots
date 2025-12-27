@@ -728,5 +728,16 @@ func Run() error {
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	program = p
 	_, err := p.Run()
+
+	// Check if .zshrc was modified and notify user
+	home, _ := os.UserHomeDir()
+	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
+	if _, statErr := os.Stat(markerPath); statErr == nil {
+		fmt.Println()
+		fmt.Println("\033[1;33m⚠\033[0m  ~/.zshrc was modified. Run: \033[1msource ~/.zshrc\033[0m")
+		fmt.Println()
+		os.Remove(markerPath)
+	}
+
 	return err
 }
