@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -40,27 +41,43 @@ var (
 				PaddingLeft(4).
 				Foreground(lipgloss.Color("170")).
 				Bold(true)
+
+	progressStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("39"))
 )
 
 type category struct {
-	name  string
-	key   string
-	apps  []appItem
+	name string
+	key  string
+	apps []appItem
 }
 
 type appItem struct {
 	name        string
 	description string
 	installed   bool
+	selected    bool
 }
 
+type installState int
+
+const (
+	stateIdle installState = iota
+	stateInstalling
+	stateRemoving
+)
+
 type model struct {
-	config     *config.Config
-	categories []category
-	cursor     int
-	inCategory bool
-	appCursor  int
-	quitting   bool
+	config       *config.Config
+	categories   []category
+	cursor       int
+	inCategory   bool
+	appCursor    int
+	quitting     bool
+	state        installState
+	progressMsg  string
+	progressIdx  int
+	progressApps []string
 }
 
 func initialModel() model {
@@ -69,7 +86,6 @@ func initialModel() model {
 
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		// Return empty model if config fails to load
 		return model{
 			categories: []category{
 				{name: "CLI Tools", key: "cli"},
@@ -77,7 +93,6 @@ func initialModel() model {
 		}
 	}
 
-	// Build categories from config
 	cats := buildCategories(cfg)
 
 	return model{
@@ -88,7 +103,6 @@ func initialModel() model {
 }
 
 func buildCategories(cfg *config.Config) []category {
-	// Group apps by category
 	catMap := make(map[string][]appItem)
 	catNames := map[string]string{
 		"cli":  "CLI Tools",
@@ -102,11 +116,11 @@ func buildCategories(cfg *config.Config) []category {
 			name:        name,
 			description: app.Description,
 			installed:   installed,
+			selected:    false,
 		}
 		catMap[app.Category] = append(catMap[app.Category], item)
 	}
 
-	// Build category list (only include non-empty categories)
 	var cats []category
 	for key, displayName := range catNames {
 		if apps, ok := catMap[key]; ok && len(apps) > 0 {
@@ -144,18 +158,130 @@ func (c *category) installedCount() int {
 	return count
 }
 
+func (c *category) selectedCount() int {
+	count := 0
+	for _, app := range c.apps {
+		if app.selected {
+			count++
+		}
+	}
+	return count
+}
+
+func (c *category) getSelectedNames() []string {
+	var names []string
+	for _, app := range c.apps {
+		if app.selected {
+			names = append(names, app.name)
+		}
+	}
+	return names
+}
+
+// Messages for async operations
+type installCompleteMsg struct {
+	name    string
+	success bool
+}
+
+type removeCompleteMsg struct {
+	name    string
+	success bool
+}
+
+func installAppCmd(name string) tea.Cmd {
+	return func() tea.Msg {
+		cmd := exec.Command("/opt/homebrew/bin/brew", "install", "-q", name)
+		err := cmd.Run()
+		return installCompleteMsg{name: name, success: err == nil}
+	}
+}
+
+func removeAppCmd(name string) tea.Cmd {
+	return func() tea.Msg {
+		cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", "-q", name)
+		err := cmd.Run()
+		return removeCompleteMsg{name: name, success: err == nil}
+	}
+}
+
 func (m model) Init() tea.Cmd {
 	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case installCompleteMsg:
+		return m.handleInstallComplete(msg)
+	case removeCompleteMsg:
+		return m.handleRemoveComplete(msg)
 	case tea.KeyMsg:
+		if m.state != stateIdle {
+			return m, nil // Ignore keys during install/remove
+		}
 		if m.inCategory {
 			return m.updateInCategory(msg)
 		}
 		return m.updateMain(msg)
 	}
+	return m, nil
+}
+
+func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd) {
+	cat := &m.categories[m.cursor]
+
+	// Mark as installed and deselect
+	for i := range cat.apps {
+		if cat.apps[i].name == msg.name {
+			cat.apps[i].installed = msg.success
+			cat.apps[i].selected = false
+			break
+		}
+	}
+
+	m.progressIdx++
+
+	// Continue with next app or finish
+	if m.progressIdx < len(m.progressApps) {
+		nextApp := m.progressApps[m.progressIdx]
+		m.progressMsg = fmt.Sprintf("Installing %s... (%d/%d)", nextApp, m.progressIdx+1, len(m.progressApps))
+		return m, installAppCmd(nextApp)
+	}
+
+	// Done
+	m.state = stateIdle
+	m.progressMsg = ""
+	m.progressApps = nil
+	return m, nil
+}
+
+func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) {
+	cat := &m.categories[m.cursor]
+
+	// Mark as uninstalled and deselect
+	for i := range cat.apps {
+		if cat.apps[i].name == msg.name {
+			if msg.success {
+				cat.apps[i].installed = false
+			}
+			cat.apps[i].selected = false
+			break
+		}
+	}
+
+	m.progressIdx++
+
+	// Continue with next app or finish
+	if m.progressIdx < len(m.progressApps) {
+		nextApp := m.progressApps[m.progressIdx]
+		m.progressMsg = fmt.Sprintf("Removing %s... (%d/%d)", nextApp, m.progressIdx+1, len(m.progressApps))
+		return m, removeAppCmd(nextApp)
+	}
+
+	// Done
+	m.state = stateIdle
+	m.progressMsg = ""
+	m.progressApps = nil
 	return m, nil
 }
 
@@ -182,7 +308,10 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	cat := &m.categories[m.cursor]
 	switch {
-	case key.Matches(msg, keys.Quit), key.Matches(msg, keys.Back):
+	case key.Matches(msg, keys.Quit):
+		m.quitting = true
+		return m, tea.Quit
+	case key.Matches(msg, keys.Back):
 		m.inCategory = false
 	case key.Matches(msg, keys.Up):
 		if m.appCursor > 0 {
@@ -192,20 +321,62 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.appCursor < len(cat.apps)-1 {
 			m.appCursor++
 		}
-	case key.Matches(msg, keys.Enter), key.Matches(msg, keys.InstallAll):
-		// Install selected app
-		app := cat.apps[m.appCursor]
-		if !app.installed {
-			installApp(app.name)
-			cat.apps[m.appCursor].installed = true
+	case key.Matches(msg, keys.Space):
+		// Toggle selection
+		cat.apps[m.appCursor].selected = !cat.apps[m.appCursor].selected
+	case key.Matches(msg, keys.SelectAll):
+		// Select all uninstalled
+		for i := range cat.apps {
+			if !cat.apps[i].installed {
+				cat.apps[i].selected = true
+			}
+		}
+	case key.Matches(msg, keys.Install):
+		// Install selected
+		selected := cat.getSelectedNames()
+		if len(selected) > 0 {
+			// Filter to only uninstalled
+			var toInstall []string
+			for _, name := range selected {
+				for _, app := range cat.apps {
+					if app.name == name && !app.installed {
+						toInstall = append(toInstall, name)
+						break
+					}
+				}
+			}
+			if len(toInstall) > 0 {
+				m.state = stateInstalling
+				m.progressApps = toInstall
+				m.progressIdx = 0
+				m.progressMsg = fmt.Sprintf("Installing %s... (1/%d)", toInstall[0], len(toInstall))
+				return m, installAppCmd(toInstall[0])
+			}
+		}
+	case key.Matches(msg, keys.Remove):
+		// Remove selected
+		selected := cat.getSelectedNames()
+		if len(selected) > 0 {
+			// Filter to only installed
+			var toRemove []string
+			for _, name := range selected {
+				for _, app := range cat.apps {
+					if app.name == name && app.installed {
+						toRemove = append(toRemove, name)
+						break
+					}
+				}
+			}
+			if len(toRemove) > 0 {
+				m.state = stateRemoving
+				m.progressApps = toRemove
+				m.progressIdx = 0
+				m.progressMsg = fmt.Sprintf("Removing %s... (1/%d)", toRemove[0], len(toRemove))
+				return m, removeAppCmd(toRemove[0])
+			}
 		}
 	}
 	return m, nil
-}
-
-func installApp(name string) {
-	cmd := exec.Command("/opt/homebrew/bin/brew", "install", "-q", name)
-	cmd.Run()
 }
 
 func (m model) View() string {
@@ -255,12 +426,19 @@ func (m model) viewCategory() string {
 	s := titleStyle.Render(cat.name) + "\n\n"
 
 	for i, app := range cat.apps {
-		indicator := "○"
-		if app.installed {
-			indicator = "✓"
+		// Checkbox
+		checkbox := "[ ]"
+		if app.selected {
+			checkbox = "[x]"
 		}
 
-		line := fmt.Sprintf("%s %-15s %s", indicator, app.name, statusStyle.Render(app.description))
+		// Install status
+		status := "○"
+		if app.installed {
+			status = "✓"
+		}
+
+		line := fmt.Sprintf("%s %s %-12s %s", checkbox, status, app.name, statusStyle.Render(app.description))
 
 		if i == m.appCursor {
 			s += appSelectedStyle.Render(line) + "\n"
@@ -269,18 +447,37 @@ func (m model) viewCategory() string {
 		}
 	}
 
-	s += helpStyle.Render("\n↑/↓ navigate • enter install • esc back • q quit")
+	// Progress message
+	if m.progressMsg != "" {
+		s += "\n" + progressStyle.Render(m.progressMsg)
+	}
+
+	// Help
+	var helpParts []string
+	helpParts = append(helpParts, "↑/↓ navigate", "space select", "a select all")
+
+	selectedCount := cat.selectedCount()
+	if selectedCount > 0 {
+		helpParts = append(helpParts, fmt.Sprintf("i install(%d)", selectedCount))
+		helpParts = append(helpParts, fmt.Sprintf("r remove(%d)", selectedCount))
+	}
+	helpParts = append(helpParts, "esc back", "q quit")
+
+	s += helpStyle.Render("\n" + strings.Join(helpParts, " • "))
 
 	return s
 }
 
 type keyMap struct {
-	Up         key.Binding
-	Down       key.Binding
-	Enter      key.Binding
-	Back       key.Binding
-	InstallAll key.Binding
-	Quit       key.Binding
+	Up        key.Binding
+	Down      key.Binding
+	Enter     key.Binding
+	Back      key.Binding
+	Space     key.Binding
+	SelectAll key.Binding
+	Install   key.Binding
+	Remove    key.Binding
+	Quit      key.Binding
 }
 
 var keys = keyMap{
@@ -296,8 +493,17 @@ var keys = keyMap{
 	Back: key.NewBinding(
 		key.WithKeys("esc", "h"),
 	),
-	InstallAll: key.NewBinding(
+	Space: key.NewBinding(
+		key.WithKeys(" "),
+	),
+	SelectAll: key.NewBinding(
+		key.WithKeys("a"),
+	),
+	Install: key.NewBinding(
 		key.WithKeys("i"),
+	),
+	Remove: key.NewBinding(
+		key.WithKeys("r"),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "ctrl+c"),
