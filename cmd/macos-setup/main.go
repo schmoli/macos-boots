@@ -105,20 +105,10 @@ func runInstall(cfg *config.Config, category string) error {
 	if len(result.Installed) > 0 {
 		installer.LogSuccess(fmt.Sprintf("Installed: %v", result.Installed))
 	}
-	if len(result.Deferred) > 0 {
-		installer.LogWarn(fmt.Sprintf("Deferred (npm not in PATH): %v", result.Deferred))
-		cmd := "macos-setup"
-		if category != "" {
-			cmd += " " + category
-		} else {
-			cmd += " all"
-		}
-		installer.LogDim("Run: source ~/.zshrc && " + cmd)
-	}
 	if len(result.Failed) > 0 {
 		installer.LogFail(fmt.Sprintf("Failed: %v", result.Failed))
 	}
-	if len(result.Installed) == 0 && len(result.Failed) == 0 && len(result.Deferred) == 0 {
+	if len(result.Installed) == 0 && len(result.Failed) == 0 {
 		label := "tools"
 		if category != "" {
 			label = category + " tools"

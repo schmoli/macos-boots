@@ -1,5 +1,0 @@
-install: brew
-description: Fast Node.js version manager
-post_install:
-  - fnm install 24
-  - fnm default 24

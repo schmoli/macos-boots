@@ -106,7 +106,6 @@ type Result struct {
 	Installed []string
 	Skipped   []string
 	Failed    []string
-	Deferred  []string
 }
 
 // Install installs apps from the given map, using Brewfile for brew/cask
@@ -148,18 +147,11 @@ func Install(apps map[string]config.App, verbose bool) (*Result, error) {
 		}
 	}
 
-	// Install npm apps sequentially (if npm is available)
+	// Install npm apps sequentially
 	if len(npmApps) > 0 {
-		if !isNpmAvailable() {
-			// Defer npm packages until node is in PATH
-			for name := range npmApps {
-				result.Deferred = append(result.Deferred, name)
-			}
-		} else {
-			for name, app := range npmApps {
-				if err := installNpmApp(name, app, result, verbose); err != nil {
-					result.Failed = append(result.Failed, name)
-				}
+		for name, app := range npmApps {
+			if err := installNpmApp(name, app, result, verbose); err != nil {
+				result.Failed = append(result.Failed, name)
 			}
 		}
 	}
@@ -184,11 +176,6 @@ func Install(apps map[string]config.App, verbose bool) (*Result, error) {
 	}
 
 	return result, nil
-}
-
-func isNpmAvailable() bool {
-	_, err := exec.LookPath("npm")
-	return err == nil
 }
 
 func isNpmInstalled(pkg string) bool {
