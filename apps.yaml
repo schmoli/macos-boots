@@ -162,6 +162,11 @@ apps:
     tier: auto
     description: Claude macOS app
 
+  daisydisk:
+    install: cask
+    category: apps
+    description: Disk space visualizer
+
   localsend:
     install: cask
     category: apps
