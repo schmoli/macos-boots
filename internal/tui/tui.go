@@ -290,21 +290,16 @@ func addZshIntegration(name, zshContent string) error {
 		return err
 	}
 
-	// Ensure init.zsh exists in base dir
+	// Always write init.zsh (auto-generated, safe to overwrite)
 	initPath := filepath.Join(baseDir, "init.zsh")
-	if _, err := os.Stat(initPath); os.IsNotExist(err) {
-		initContent := `# macos-setup shell integration
-# Sources all app-specific configs from ~/.config/macos-setup/apps/*/
-for app_dir in ~/.config/macos-setup/apps/*/; do
-  [[ -d "$app_dir" ]] || continue
-  for f in "$app_dir"*.zsh; do
-    [[ -f "$f" ]] && source "$f"
-  done
+	initContent := `# macos-setup shell integration (auto-generated)
+# Sources all *.zsh files from ~/.config/macos-setup/apps/*/
+for f in $HOME/.config/macos-setup/apps/*/*.zsh(N); do
+  source "$f"
 done
 `
-		if err := os.WriteFile(initPath, []byte(initContent), 0644); err != nil {
-			return err
-		}
+	if err := os.WriteFile(initPath, []byte(initContent), 0644); err != nil {
+		return err
 	}
 
 	// Ensure .zshrc sources our init.zsh
@@ -1256,6 +1251,18 @@ var keys = keyMap{
 func Run() error {
 	m := initialModel()
 	appConfig = m.config
+
+	// Bootstrap macos-setup's own shell config on first run
+	if appConfig != nil {
+		if app, ok := appConfig.Apps["macos-setup"]; ok && app.Zsh != "" {
+			home, _ := os.UserHomeDir()
+			appDir := filepath.Join(home, ".config", "macos-setup", "apps", "macos-setup")
+			if _, err := os.Stat(appDir); os.IsNotExist(err) {
+				addZshIntegration("macos-setup", app.Zsh)
+			}
+		}
+	}
+
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	program = p
 	_, err := p.Run()
