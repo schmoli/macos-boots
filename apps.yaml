@@ -23,14 +23,11 @@ apps:
     tier: auto
     description: Cat with syntax highlighting
 
-  asdf:
+  fnm:
     install: brew
     category: dev
     tier: auto
-    description: Version manager (node, python, etc)
-    depends:
-      - gpg
-      - gawk
+    description: Fast Node.js version manager
     zsh: |
-      # asdf version manager
-      . /opt/homebrew/opt/asdf/libexec/asdf.sh
+      # fnm - fast node manager
+      eval "$(fnm env --use-on-cd)"
