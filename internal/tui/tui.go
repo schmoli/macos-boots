@@ -324,12 +324,18 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.appCursor++
 		}
 	case key.Matches(msg, keys.Space):
-		cat.apps[m.appCursor].selected = !cat.apps[m.appCursor].selected
+		m.categories[m.cursor].apps[m.appCursor].selected = !m.categories[m.cursor].apps[m.appCursor].selected
 	case key.Matches(msg, keys.SelectAll):
-		for i := range cat.apps {
-			if !cat.apps[i].installed {
-				cat.apps[i].selected = true
+		// Toggle: if any unselected, select all; otherwise deselect all
+		anyUnselected := false
+		for i := range m.categories[m.cursor].apps {
+			if !m.categories[m.cursor].apps[i].selected {
+				anyUnselected = true
+				break
 			}
+		}
+		for i := range m.categories[m.cursor].apps {
+			m.categories[m.cursor].apps[i].selected = anyUnselected
 		}
 	case key.Matches(msg, keys.Install):
 		selected := cat.getSelectedNames()
