@@ -10,7 +10,18 @@ import (
 )
 
 func main() {
-	// Auto-pull on any command
+	cmd := ""
+	if len(os.Args) > 1 {
+		cmd = os.Args[1]
+	}
+
+	// Handle help without loading config
+	if cmd == "help" || cmd == "--help" || cmd == "-h" {
+		printHelp()
+		return
+	}
+
+	// Auto-pull on any command (except help)
 	if installer.AutoPull() {
 		fmt.Println()
 	}
@@ -19,11 +30,6 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 		os.Exit(1)
-	}
-
-	cmd := ""
-	if len(os.Args) > 1 {
-		cmd = os.Args[1]
 	}
 
 	var runErr error
@@ -40,8 +46,6 @@ func main() {
 		runErr = installer.Upgrade(cfg)
 	case "status":
 		installer.Status(cfg)
-	case "help", "--help", "-h":
-		printHelp()
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
 		printHelp()
