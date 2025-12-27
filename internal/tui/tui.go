@@ -258,20 +258,24 @@ func installAppCmd(name string) tea.Cmd {
 
 func addZshIntegration(name, zshContent string) error {
 	home, _ := os.UserHomeDir()
-	zshrcDir := filepath.Join(home, ".config", "macos-setup", "zshrc.d")
+	baseDir := filepath.Join(home, ".config", "macos-setup")
+	appDir := filepath.Join(baseDir, "apps", name)
 
-	// Ensure zshrc.d directory exists
-	if err := os.MkdirAll(zshrcDir, 0755); err != nil {
+	// Ensure app directory exists
+	if err := os.MkdirAll(appDir, 0755); err != nil {
 		return err
 	}
 
-	// Ensure init.zsh exists
-	initPath := filepath.Join(zshrcDir, "init.zsh")
+	// Ensure init.zsh exists in base dir
+	initPath := filepath.Join(baseDir, "init.zsh")
 	if _, err := os.Stat(initPath); os.IsNotExist(err) {
 		initContent := `# macos-setup shell integration
-# Sources all app-specific configs in this directory
-for f in ~/.config/macos-setup/zshrc.d/*.zsh; do
-  [[ -f "$f" && "$f" != *"/init.zsh" ]] && source "$f"
+# Sources all app-specific configs from ~/.config/macos-setup/apps/*/
+for app_dir in ~/.config/macos-setup/apps/*/; do
+  [[ -d "$app_dir" ]] || continue
+  for f in "$app_dir"*.zsh; do
+    [[ -f "$f" ]] && source "$f"
+  done
 done
 `
 		if err := os.WriteFile(initPath, []byte(initContent), 0644); err != nil {
@@ -282,7 +286,7 @@ done
 	// Ensure .zshrc sources our init.zsh
 	zshrcPath := filepath.Join(home, ".zshrc")
 	existing, _ := os.ReadFile(zshrcPath)
-	sourceLine := "source ~/.config/macos-setup/zshrc.d/init.zsh"
+	sourceLine := "source ~/.config/macos-setup/init.zsh"
 	if !strings.Contains(string(existing), sourceLine) {
 		f, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -292,13 +296,13 @@ done
 		f.Close()
 
 		// Mark zshrc as modified
-		markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
+		markerPath := filepath.Join(baseDir, ".zshrc-modified")
 		os.WriteFile(markerPath, []byte{}, 0644)
 	}
 
-	// Write app-specific config
-	appConfigPath := filepath.Join(zshrcDir, name+".zsh")
-	return os.WriteFile(appConfigPath, []byte(strings.TrimSpace(zshContent)+"\n"), 0644)
+	// Write app-specific zshrc
+	appZshPath := filepath.Join(appDir, "zshrc.zsh")
+	return os.WriteFile(appZshPath, []byte(strings.TrimSpace(zshContent)+"\n"), 0644)
 }
 
 func removeAppCmd(name string) tea.Cmd {
@@ -306,11 +310,11 @@ func removeAppCmd(name string) tea.Cmd {
 		cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", name)
 		result := runCmdWithOutput(cmd, name, false)
 
-		// Remove zsh integration if exists
+		// Remove app config directory if exists
 		home, _ := os.UserHomeDir()
-		appConfigPath := filepath.Join(home, ".config", "macos-setup", "zshrc.d", name+".zsh")
-		if _, err := os.Stat(appConfigPath); err == nil {
-			os.Remove(appConfigPath)
+		appDir := filepath.Join(home, ".config", "macos-setup", "apps", name)
+		if _, err := os.Stat(appDir); err == nil {
+			os.RemoveAll(appDir)
 			if program != nil {
 				program.Send(logLineMsg("Removed shell integration"))
 			}
