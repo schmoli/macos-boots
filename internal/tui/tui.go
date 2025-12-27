@@ -434,13 +434,14 @@ func (m *model) removeDeps(appName string) {
 }
 
 func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd) {
-	cat := &m.categories[m.cursor]
-
-	for i := range cat.apps {
-		if cat.apps[i].name == msg.name {
-			cat.apps[i].installed = msg.success
-			cat.apps[i].selected = false
-			break
+	// Search all categories for the app
+	for catIdx := range m.categories {
+		for appIdx := range m.categories[catIdx].apps {
+			if m.categories[catIdx].apps[appIdx].name == msg.name {
+				m.categories[catIdx].apps[appIdx].installed = msg.success
+				m.categories[catIdx].apps[appIdx].selected = false
+				break
+			}
 		}
 	}
 
@@ -459,15 +460,16 @@ func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd
 }
 
 func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) {
-	cat := &m.categories[m.cursor]
-
-	for i := range cat.apps {
-		if cat.apps[i].name == msg.name {
-			if msg.success {
-				cat.apps[i].installed = false
+	// Search all categories for the app
+	for catIdx := range m.categories {
+		for appIdx := range m.categories[catIdx].apps {
+			if m.categories[catIdx].apps[appIdx].name == msg.name {
+				if msg.success {
+					m.categories[catIdx].apps[appIdx].installed = false
+				}
+				m.categories[catIdx].apps[appIdx].selected = false
+				break
 			}
-			cat.apps[i].selected = false
-			break
 		}
 	}
 
@@ -874,6 +876,29 @@ func (m model) viewMainContent() string {
 			s += selectedStyle.Render(line) + "\n"
 		} else {
 			s += categoryStyle.Render(line) + "\n"
+		}
+	}
+
+	// Show dependencies section if any
+	if len(m.requiredDeps) > 0 {
+		s += "\n" + statusStyle.Render("Dependencies:") + "\n"
+		for dep, apps := range m.requiredDeps {
+			status := "○"
+			installing := false
+			for i, name := range m.progressApps {
+				if name == dep && i >= m.progressIdx {
+					installing = true
+					break
+				}
+			}
+			if installing {
+				status = "◐"
+			} else if isInstalled(dep, "brew") {
+				status = "✓"
+			}
+			appList := strings.Join(apps, ", ")
+			line := fmt.Sprintf("     %s %-12s %s", status, dep, statusStyle.Render("["+appList+"]"))
+			s += appStyle.Render(line) + "\n"
 		}
 	}
 
