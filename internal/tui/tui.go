@@ -456,6 +456,13 @@ func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd
 	m.state = stateIdle
 	m.progressMsg = ""
 	m.progressApps = nil
+	// Clear all selections when done
+	for catIdx := range m.categories {
+		for appIdx := range m.categories[catIdx].apps {
+			m.categories[catIdx].apps[appIdx].selected = false
+		}
+	}
+	m.requiredDeps = make(map[string][]string)
 	return m, tea.SetWindowTitle("macos-setup")
 }
 
@@ -839,7 +846,11 @@ func (m model) buildFooter() string {
 func (m model) totalSelectedCount() int {
 	count := 0
 	for _, cat := range m.categories {
-		count += cat.selectedCount()
+		for _, app := range cat.apps {
+			if app.selected && !app.installed {
+				count++
+			}
+		}
 	}
 	return count
 }
