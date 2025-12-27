@@ -146,14 +146,15 @@ apps:
     tier: required
     description: Mac App Store CLI
 
-  claude-code:
-    install: npm
-    package: "@anthropic-ai/claude-code"
-    category: cli
-    tier: auto
-    description: Claude Code CLI
-    zsh: |
-      alias claude-agent='claude --dangerously-skip-permissions'
+  # FIXME: not yet ready - npm install needs fnm setup first
+  # claude-code:
+  #   install: npm
+  #   package: "@anthropic-ai/claude-code"
+  #   category: cli
+  #   tier: auto
+  #   description: Claude Code CLI
+  #   zsh: |
+  #     alias claude-agent='claude --dangerously-skip-permissions'
 
   claude:
     install: cask
