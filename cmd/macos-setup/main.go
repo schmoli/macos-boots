@@ -9,10 +9,22 @@ import (
 	"github.com/schmoli/macos-setup/internal/installer"
 )
 
+var verbose bool
+
 func main() {
+	// Parse flags and command
+	var args []string
+	for _, arg := range os.Args[1:] {
+		if arg == "-v" || arg == "--verbose" {
+			verbose = true
+		} else {
+			args = append(args, arg)
+		}
+	}
+
 	cmd := ""
-	if len(os.Args) > 1 {
-		cmd = os.Args[1]
+	if len(args) > 0 {
+		cmd = args[0]
 	}
 
 	// Handle help without loading config
@@ -83,7 +95,7 @@ func runInstall(cfg *config.Config, category string) error {
 		return nil
 	}
 
-	result, err := installer.Install(apps, true)
+	result, err := installer.Install(apps, verbose)
 	if err != nil {
 		return err
 	}
@@ -111,11 +123,14 @@ func printHelp() {
 	fmt.Println("macos-setup - fast macOS setup")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  macos-setup          Show status")
-	fmt.Println("  macos-setup all      Install all apps")
-	fmt.Println("  macos-setup cli      Install CLI tools")
-	fmt.Println("  macos-setup apps     Install desktop apps")
-	fmt.Println("  macos-setup mas      Install App Store apps")
-	fmt.Println("  macos-setup update   Upgrade tracked apps")
-	fmt.Println("  macos-setup help     Show this help")
+	fmt.Println("  macos-setup              Show status")
+	fmt.Println("  macos-setup all          Install all apps")
+	fmt.Println("  macos-setup cli          Install CLI tools")
+	fmt.Println("  macos-setup apps         Install desktop apps")
+	fmt.Println("  macos-setup mas          Install App Store apps")
+	fmt.Println("  macos-setup update       Upgrade tracked apps")
+	fmt.Println("  macos-setup help         Show this help")
+	fmt.Println()
+	fmt.Println("Flags:")
+	fmt.Println("  -v, --verbose    Show command details on failure")
 }

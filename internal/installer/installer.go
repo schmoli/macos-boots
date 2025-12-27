@@ -142,21 +142,21 @@ func Install(apps map[string]config.App, verbose bool) (*Result, error) {
 
 	// Install brew/cask via Brewfile
 	if len(brewApps) > 0 {
-		if err := installBrewApps(brewApps, result); err != nil {
+		if err := installBrewApps(brewApps, result, verbose); err != nil {
 			return result, err
 		}
 	}
 
 	// Install npm apps sequentially
 	for name, app := range npmApps {
-		if err := installNpmApp(name, app, result); err != nil {
+		if err := installNpmApp(name, app, result, verbose); err != nil {
 			result.Failed = append(result.Failed, name)
 		}
 	}
 
 	// Install mas apps (interactive)
 	for name, app := range masApps {
-		if err := installMasApp(name, app, result); err != nil {
+		if err := installMasApp(name, app, result, verbose); err != nil {
 			result.Failed = append(result.Failed, name)
 		}
 	}
@@ -181,7 +181,7 @@ func isNpmInstalled(pkg string) bool {
 	return cmd.Run() == nil
 }
 
-func installBrewApps(apps map[string]config.App, result *Result) error {
+func installBrewApps(apps map[string]config.App, result *Result, verbose bool) error {
 	brewfile, err := GenerateBrewfile(apps)
 	if err != nil {
 		return err
@@ -203,6 +203,12 @@ func installBrewApps(apps map[string]config.App, result *Result) error {
 	if err := cmd.Run(); err != nil {
 		// Some may have failed, but continue
 		LogWarn("brew bundle had errors")
+		if verbose {
+			LogFail(fmt.Sprintf("Command: brew bundle --file=%s", brewfile))
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				LogFail(fmt.Sprintf("Exit code: %d", exitErr.ExitCode()))
+			}
+		}
 	}
 
 	// Check what actually got installed
@@ -223,7 +229,7 @@ func installBrewApps(apps map[string]config.App, result *Result) error {
 	return nil
 }
 
-func installNpmApp(name string, app config.App, result *Result) error {
+func installNpmApp(name string, app config.App, result *Result, verbose bool) error {
 	pkg := name
 	if app.Package != "" {
 		pkg = app.Package
@@ -234,6 +240,12 @@ func installNpmApp(name string, app config.App, result *Result) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
+		if verbose {
+			LogFail(fmt.Sprintf("Command: npm install -g %s", pkg))
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				LogFail(fmt.Sprintf("Exit code: %d", exitErr.ExitCode()))
+			}
+		}
 		return err
 	}
 
@@ -242,13 +254,19 @@ func installNpmApp(name string, app config.App, result *Result) error {
 	return nil
 }
 
-func installMasApp(name string, app config.App, result *Result) error {
+func installMasApp(name string, app config.App, result *Result, verbose bool) error {
 	LogProgress(fmt.Sprintf("Installing %s from App Store...", name))
 	cmd := exec.Command("mas", "install", fmt.Sprintf("%d", app.ID))
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
+		if verbose {
+			LogFail(fmt.Sprintf("Command: mas install %d", app.ID))
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				LogFail(fmt.Sprintf("Exit code: %d", exitErr.ExitCode()))
+			}
+		}
 		return err
 	}
 
