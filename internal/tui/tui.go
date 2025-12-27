@@ -315,7 +315,7 @@ func runCmdWithOutput(cmd *exec.Cmd, name string, isInstall bool) tea.Msg {
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return tea.SetWindowTitle("macos-setup")
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -331,7 +331,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.logLines) > maxVisible {
 			m.logScroll = len(m.logLines) - maxVisible
 		}
-		return m, nil
+		return m, tea.SetWindowTitle("macos-setup")
 	case installCompleteMsg:
 		return m.handleInstallComplete(msg)
 	case removeCompleteMsg:
@@ -449,13 +449,13 @@ func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd
 	if m.progressIdx < len(m.progressApps) {
 		nextApp := m.progressApps[m.progressIdx]
 		m.progressMsg = fmt.Sprintf("Installing %s... (%d/%d)", nextApp, m.progressIdx+1, len(m.progressApps))
-		return m, installAppCmd(nextApp)
+		return m, tea.Batch(tea.SetWindowTitle("macos-setup"), installAppCmd(nextApp))
 	}
 
 	m.state = stateIdle
 	m.progressMsg = ""
 	m.progressApps = nil
-	return m, nil
+	return m, tea.SetWindowTitle("macos-setup")
 }
 
 func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) {
@@ -476,13 +476,13 @@ func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) 
 	if m.progressIdx < len(m.progressApps) {
 		nextApp := m.progressApps[m.progressIdx]
 		m.progressMsg = fmt.Sprintf("Removing %s... (%d/%d)", nextApp, m.progressIdx+1, len(m.progressApps))
-		return m, removeAppCmd(nextApp)
+		return m, tea.Batch(tea.SetWindowTitle("macos-setup"), removeAppCmd(nextApp))
 	}
 
 	m.state = stateIdle
 	m.progressMsg = ""
 	m.progressApps = nil
-	return m, nil
+	return m, tea.SetWindowTitle("macos-setup")
 }
 
 func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
