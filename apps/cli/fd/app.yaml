@@ -1,2 +1,4 @@
 install: brew
 description: Fast find alternative
+post_install:
+  - fd --gen-completions zsh > /opt/homebrew/share/zsh/site-functions/_fd
