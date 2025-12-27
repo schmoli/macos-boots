@@ -1,7 +1,9 @@
 package tui
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -70,6 +72,13 @@ const (
 	stateRemoving
 )
 
+type layoutMode int
+
+const (
+	layoutHorizontal layoutMode = iota // side-by-side
+	layoutVertical                     // top-bottom
+)
+
 type model struct {
 	config       *config.Config
 	categories   []category
@@ -83,6 +92,9 @@ type model struct {
 	progressApps []string
 	width        int
 	height       int
+	layout       layoutMode
+	logLines     []string
+	logScroll    int
 }
 
 func initialModel() model {
@@ -193,20 +205,57 @@ type removeCompleteMsg struct {
 	success bool
 }
 
+type logLineMsg string
+
+var program *tea.Program
+
 func installAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("/opt/homebrew/bin/brew", "install", "-q", name)
-		err := cmd.Run()
-		return installCompleteMsg{name: name, success: err == nil}
+		cmd := exec.Command("/opt/homebrew/bin/brew", "install", name)
+		return runCmdWithOutput(cmd, name, true)
 	}
 }
 
 func removeAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", "-q", name)
-		err := cmd.Run()
-		return removeCompleteMsg{name: name, success: err == nil}
+		cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", name)
+		return runCmdWithOutput(cmd, name, false)
 	}
+}
+
+func runCmdWithOutput(cmd *exec.Cmd, name string, isInstall bool) tea.Msg {
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
+
+	if err := cmd.Start(); err != nil {
+		if program != nil {
+			program.Send(logLineMsg(fmt.Sprintf("Error starting: %v", err)))
+		}
+		if isInstall {
+			return installCompleteMsg{name: name, success: false}
+		}
+		return removeCompleteMsg{name: name, success: false}
+	}
+
+	// Stream output in goroutines
+	streamOutput := func(r io.Reader) {
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			if program != nil {
+				program.Send(logLineMsg(scanner.Text()))
+			}
+		}
+	}
+
+	go streamOutput(stdout)
+	go streamOutput(stderr)
+
+	err := cmd.Wait()
+
+	if isInstall {
+		return installCompleteMsg{name: name, success: err == nil}
+	}
+	return removeCompleteMsg{name: name, success: err == nil}
 }
 
 func (m model) Init() tea.Cmd {
@@ -218,6 +267,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		return m, nil
+	case logLineMsg:
+		m.logLines = append(m.logLines, string(msg))
+		// Auto-scroll to bottom
+		maxVisible := m.getLogHeight()
+		if len(m.logLines) > maxVisible {
+			m.logScroll = len(m.logLines) - maxVisible
+		}
 		return m, nil
 	case installCompleteMsg:
 		return m.handleInstallComplete(msg)
@@ -233,6 +290,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateMain(msg)
 	}
 	return m, nil
+}
+
+func (m model) getLogHeight() int {
+	if m.height == 0 {
+		return 10
+	}
+	if m.layout == layoutVertical {
+		return (m.height - 6) / 2 // half height minus borders/footer
+	}
+	return m.height - 6 // full height minus borders/footer
 }
 
 func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd) {
@@ -303,6 +370,12 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Enter):
 		m.inCategory = true
 		m.appCursor = 0
+	case key.Matches(msg, keys.Layout):
+		if m.layout == layoutHorizontal {
+			m.layout = layoutVertical
+		} else {
+			m.layout = layoutHorizontal
+		}
 	}
 	return m, nil
 }
@@ -377,52 +450,180 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m, removeAppCmd(toRemove[0])
 			}
 		}
+	case key.Matches(msg, keys.Layout):
+		if m.layout == layoutHorizontal {
+			m.layout = layoutVertical
+		} else {
+			m.layout = layoutHorizontal
+		}
 	}
 	return m, nil
 }
+
+var (
+	logTitleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("39"))
+
+	logStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("245"))
+
+	paneStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("62")).
+			Padding(0, 1)
+
+	footerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("241")).
+			Padding(0, 1)
+)
 
 func (m model) View() string {
 	if m.quitting {
 		return ""
 	}
 
+	if m.width == 0 || m.height == 0 {
+		return "Loading..."
+	}
+
+	// Build footer
+	footer := m.buildFooter()
+	footerHeight := 1
+
+	// Available space for panes
+	availableHeight := m.height - footerHeight - 2 // -2 for margins
+	availableWidth := m.width - 2
+
+	var mainPane, logPane string
+	var mainWidth, logWidth, mainHeight, logHeight int
+
+	if m.layout == layoutHorizontal {
+		// Side-by-side
+		mainWidth = availableWidth/2 - 2
+		logWidth = availableWidth - mainWidth - 4
+		mainHeight = availableHeight - 2
+		logHeight = availableHeight - 2
+	} else {
+		// Top-bottom
+		mainWidth = availableWidth - 2
+		logWidth = availableWidth - 2
+		mainHeight = availableHeight/2 - 2
+		logHeight = availableHeight - mainHeight - 4
+	}
+
+	// Render main content pane
 	var content string
 	if m.inCategory {
-		content = m.viewCategory()
+		content = m.viewCategoryContent()
 	} else {
-		content = m.viewMain()
+		content = m.viewMainContent()
+	}
+	mainPane = m.renderPane("", content, mainWidth, mainHeight)
+
+	// Render log pane
+	logContent := m.viewLog(logHeight)
+	logPane = m.renderPane("Log", logContent, logWidth, logHeight)
+
+	// Combine panes based on layout
+	var combined string
+	if m.layout == layoutHorizontal {
+		combined = lipgloss.JoinHorizontal(lipgloss.Top, mainPane, " ", logPane)
+	} else {
+		combined = lipgloss.JoinVertical(lipgloss.Left, mainPane, logPane)
 	}
 
-	// Apply border and size to fill terminal
-	if m.width > 0 && m.height > 0 {
-		// Account for border (2) and padding (2*2)
-		innerWidth := m.width - 6
-		innerHeight := m.height - 4
-
-		if innerWidth < 20 {
-			innerWidth = 20
-		}
-		if innerHeight < 10 {
-			innerHeight = 10
-		}
-
-		// Pad content to fill the space
-		lines := strings.Split(content, "\n")
-		for len(lines) < innerHeight {
-			lines = append(lines, "")
-		}
-		content = strings.Join(lines[:innerHeight], "\n")
-
-		return borderStyle.
-			Width(innerWidth).
-			Height(innerHeight).
-			Render(content)
-	}
-
-	return content
+	// Add footer
+	return lipgloss.JoinVertical(lipgloss.Left, combined, footer)
 }
 
-func (m model) viewMain() string {
+func (m model) renderPane(title string, content string, width, height int) string {
+	if width < 10 {
+		width = 10
+	}
+	if height < 3 {
+		height = 3
+	}
+
+	// Add title if present
+	var s string
+	contentHeight := height
+	if title != "" {
+		s = logTitleStyle.Render(title) + "\n"
+		contentHeight--
+	}
+
+	// Pad/truncate content to fit
+	lines := strings.Split(content, "\n")
+	for len(lines) < contentHeight {
+		lines = append(lines, "")
+	}
+	if len(lines) > contentHeight {
+		lines = lines[:contentHeight]
+	}
+	// Truncate long lines
+	for i, line := range lines {
+		if len(line) > width-2 {
+			lines[i] = line[:width-5] + "..."
+		}
+	}
+	s += strings.Join(lines, "\n")
+
+	return paneStyle.Width(width).Height(height).Render(s)
+}
+
+func (m model) viewLog(height int) string {
+	if len(m.logLines) == 0 {
+		return logStyle.Render("No output yet...")
+	}
+
+	start := m.logScroll
+	end := start + height
+	if end > len(m.logLines) {
+		end = len(m.logLines)
+	}
+	if start > len(m.logLines) {
+		start = 0
+		if end > len(m.logLines) {
+			end = len(m.logLines)
+		}
+	}
+
+	visible := m.logLines[start:end]
+	return logStyle.Render(strings.Join(visible, "\n"))
+}
+
+func (m model) buildFooter() string {
+	var parts []string
+	parts = append(parts, "↑/↓ nav")
+
+	if m.inCategory {
+		parts = append(parts, "space sel", "a all")
+		cat := m.categories[m.cursor]
+		if cat.selectedCount() > 0 {
+			parts = append(parts, fmt.Sprintf("i inst(%d)", cat.selectedCount()))
+			parts = append(parts, fmt.Sprintf("r rem(%d)", cat.selectedCount()))
+		}
+		parts = append(parts, "esc back")
+	} else {
+		parts = append(parts, "enter sel")
+	}
+
+	layoutName := "horiz"
+	if m.layout == layoutVertical {
+		layoutName = "vert"
+	}
+	parts = append(parts, fmt.Sprintf("tab layout(%s)", layoutName))
+	parts = append(parts, "q quit")
+
+	if m.progressMsg != "" {
+		parts = append(parts, progressStyle.Render(m.progressMsg))
+	}
+
+	return footerStyle.Render(strings.Join(parts, " • "))
+}
+
+func (m model) viewMainContent() string {
 	s := titleStyle.Render("macos-setup") + "\n\n"
 
 	for i, cat := range m.categories {
@@ -447,12 +648,10 @@ func (m model) viewMain() string {
 		}
 	}
 
-	s += "\n" + helpStyle.Render("↑/↓ navigate • enter select • q quit")
-
 	return s
 }
 
-func (m model) viewCategory() string {
+func (m model) viewCategoryContent() string {
 	cat := m.categories[m.cursor]
 	s := titleStyle.Render(cat.name) + "\n\n"
 
@@ -476,22 +675,6 @@ func (m model) viewCategory() string {
 		}
 	}
 
-	if m.progressMsg != "" {
-		s += "\n" + progressStyle.Render(m.progressMsg)
-	}
-
-	var helpParts []string
-	helpParts = append(helpParts, "↑/↓ navigate", "space select", "a select all")
-
-	selectedCount := cat.selectedCount()
-	if selectedCount > 0 {
-		helpParts = append(helpParts, fmt.Sprintf("i install(%d)", selectedCount))
-		helpParts = append(helpParts, fmt.Sprintf("r remove(%d)", selectedCount))
-	}
-	helpParts = append(helpParts, "esc back", "q quit")
-
-	s += "\n" + helpStyle.Render(strings.Join(helpParts, " • "))
-
 	return s
 }
 
@@ -504,6 +687,7 @@ type keyMap struct {
 	SelectAll key.Binding
 	Install   key.Binding
 	Remove    key.Binding
+	Layout    key.Binding
 	Quit      key.Binding
 }
 
@@ -532,6 +716,9 @@ var keys = keyMap{
 	Remove: key.NewBinding(
 		key.WithKeys("r"),
 	),
+	Layout: key.NewBinding(
+		key.WithKeys("tab"),
+	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "ctrl+c"),
 	),
@@ -539,6 +726,7 @@ var keys = keyMap{
 
 func Run() error {
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	program = p
 	_, err := p.Run()
 	return err
 }
