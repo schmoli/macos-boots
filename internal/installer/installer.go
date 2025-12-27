@@ -418,3 +418,64 @@ func Upgrade(cfg *config.Config) error {
 	fmt.Println("✓ Upgrade complete")
 	return nil
 }
+
+// Status prints installed vs available apps
+func Status(cfg *config.Config) {
+	installed := InstalledBrewPackages()
+
+	// Also check npm
+	npmInstalled := make(map[string]bool)
+	for name, app := range cfg.Apps {
+		if app.Install == "npm" {
+			pkg := name
+			if app.Package != "" {
+				pkg = app.Package
+			}
+			if isNpmInstalled(pkg) {
+				npmInstalled[name] = true
+			}
+		}
+	}
+
+	byCategory := make(map[string][]string)
+	byStatus := make(map[string]map[string][]string) // category -> status -> names
+
+	for name, app := range cfg.Apps {
+		if app.Tier == "required" {
+			continue
+		}
+
+		pkg := name
+		if app.Package != "" {
+			pkg = app.Package
+		}
+
+		isInstalled := installed[pkg] || npmInstalled[name]
+		status := "available"
+		if isInstalled {
+			status = "installed"
+		}
+
+		if byStatus[app.Category] == nil {
+			byStatus[app.Category] = make(map[string][]string)
+		}
+		byStatus[app.Category][status] = append(byStatus[app.Category][status], name)
+		byCategory[app.Category] = append(byCategory[app.Category], name)
+	}
+
+	categories := []string{"cli", "apps", "mas"}
+	for _, cat := range categories {
+		if len(byCategory[cat]) == 0 {
+			continue
+		}
+
+		fmt.Printf("\n%s:\n", cat)
+		if len(byStatus[cat]["installed"]) > 0 {
+			fmt.Printf("  ✓ %s\n", strings.Join(byStatus[cat]["installed"], ", "))
+		}
+		if len(byStatus[cat]["available"]) > 0 {
+			fmt.Printf("  ○ %s\n", strings.Join(byStatus[cat]["available"], ", "))
+		}
+	}
+	fmt.Println()
+}
