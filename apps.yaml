@@ -55,6 +55,12 @@ apps:
     zsh: |
       eval "$(zoxide init zsh)"
 
+  glow:
+    install: brew
+    category: cli
+    tier: auto
+    description: Markdown viewer
+
   fnm:
     install: brew
     category: dev
