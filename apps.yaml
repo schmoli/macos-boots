@@ -1,4 +1,12 @@
 apps:
+  brew:
+    install: shell
+    category: cli
+    tier: auto
+    description: Package manager (pre-installed)
+    zsh: |
+      alias brewup='brew update && brew upgrade'
+
   jq:
     install: brew
     category: cli

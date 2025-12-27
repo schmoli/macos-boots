@@ -162,6 +162,12 @@ func isInstalled(name string, installType string) bool {
 	case "cask":
 		cmd := exec.Command("/opt/homebrew/bin/brew", "list", "--cask", name)
 		return cmd.Run() == nil
+	case "shell":
+		// Shell-only apps check if their config exists
+		home, _ := os.UserHomeDir()
+		appDir := filepath.Join(home, ".config", "macos-setup", "apps", name)
+		_, err := os.Stat(appDir)
+		return err == nil
 	default:
 		return false
 	}
@@ -234,8 +240,26 @@ var appConfig *config.Config
 
 func installAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("/opt/homebrew/bin/brew", "install", name)
-		result := runCmdWithOutput(cmd, name, true)
+		var result tea.Msg
+
+		// Check install type
+		installType := "brew"
+		if appConfig != nil {
+			if app, ok := appConfig.Apps[name]; ok {
+				installType = app.Install
+			}
+		}
+
+		if installType == "shell" {
+			// Shell-only: just add integration, no brew install
+			if program != nil {
+				program.Send(logLineMsg(fmt.Sprintf("Setting up %s...", name)))
+			}
+			result = installCompleteMsg{name: name, success: true}
+		} else {
+			cmd := exec.Command("/opt/homebrew/bin/brew", "install", name)
+			result = runCmdWithOutput(cmd, name, true)
+		}
 
 		// Handle zsh integration if defined
 		if appConfig != nil {
@@ -246,7 +270,7 @@ func installAppCmd(name string) tea.Cmd {
 					}
 				} else {
 					if program != nil {
-						program.Send(logLineMsg("Added shell integration to ~/.zshrc"))
+						program.Send(logLineMsg("Added shell integration"))
 					}
 				}
 			}
@@ -307,8 +331,26 @@ done
 
 func removeAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", name)
-		result := runCmdWithOutput(cmd, name, false)
+		var result tea.Msg
+
+		// Check install type
+		installType := "brew"
+		if appConfig != nil {
+			if app, ok := appConfig.Apps[name]; ok {
+				installType = app.Install
+			}
+		}
+
+		if installType == "shell" {
+			// Shell-only: just remove config
+			if program != nil {
+				program.Send(logLineMsg(fmt.Sprintf("Removing %s config...", name)))
+			}
+			result = removeCompleteMsg{name: name, success: true}
+		} else {
+			cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", name)
+			result = runCmdWithOutput(cmd, name, false)
+		}
 
 		// Remove app config directory if exists
 		home, _ := os.UserHomeDir()
@@ -326,20 +368,37 @@ func removeAppCmd(name string) tea.Cmd {
 
 func reinstallAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("/opt/homebrew/bin/brew", "reinstall", name)
-		result := runCmdWithOutput(cmd, name, true)
+		var result tea.Msg
+
+		// Check install type
+		installType := "brew"
+		if appConfig != nil {
+			if app, ok := appConfig.Apps[name]; ok {
+				installType = app.Install
+			}
+		}
+
+		if installType == "shell" {
+			// Shell-only: just update integration
+			if program != nil {
+				program.Send(logLineMsg(fmt.Sprintf("Updating %s config...", name)))
+			}
+			result = installCompleteMsg{name: name, success: true}
+		} else {
+			cmd := exec.Command("/opt/homebrew/bin/brew", "reinstall", name)
+			result = runCmdWithOutput(cmd, name, true)
+		}
 
 		// Re-apply zsh integration if defined
 		if appConfig != nil {
 			if app, ok := appConfig.Apps[name]; ok && app.Zsh != "" {
-				// Remove old marker and re-add
 				if err := updateZshIntegration(name, app.Zsh); err != nil {
 					if program != nil {
 						program.Send(logLineMsg(fmt.Sprintf("Warning: zsh setup failed: %v", err)))
 					}
 				} else {
 					if program != nil {
-						program.Send(logLineMsg("Updated shell integration in ~/.zshrc"))
+						program.Send(logLineMsg("Updated shell integration"))
 					}
 				}
 			}
