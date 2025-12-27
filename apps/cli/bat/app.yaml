@@ -1,2 +1,4 @@
 install: brew
 description: Cat with syntax highlighting
+post_install:
+  - bat --completion zsh > /opt/homebrew/share/zsh/site-functions/_bat

@@ -1,2 +1,4 @@
 install: brew
 description: Markdown viewer
+post_install:
+  - glow completion zsh > /opt/homebrew/share/zsh/site-functions/_glow

@@ -1,2 +1,4 @@
 install: brew
 description: YAML processor
+post_install:
+  - yq completion zsh > /opt/homebrew/share/zsh/site-functions/_yq
