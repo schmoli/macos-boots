@@ -67,3 +67,18 @@ go mod tidy
 go build -o bin/macos-setup ./cmd/macos-setup/
 ./bin/macos-setup
 ```
+
+## Adding Apps
+
+Use the `/add-app` Claude Code skill to add new apps:
+
+```
+/add-app htop to cli
+/add-app vscode to dev
+/add-app wip jq to cli          # wip = no auto-commit
+/add-app docker-compose to dev depends on docker
+```
+
+The skill reads `docs/skills/add-app/` for schema reference, verifies packages via `brew search`, shows a YAML preview, and auto-commits with conventional format.
+
+See `.claude/skills/add-app.md` for full process.
