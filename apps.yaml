@@ -17,6 +17,12 @@ apps:
     tier: auto
     description: Resource monitor
 
+  htop:
+    install: brew
+    category: cli
+    tier: auto
+    description: Improved top (interactive process viewer)
+
   bat:
     install: brew
     category: cli
