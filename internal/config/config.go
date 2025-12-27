@@ -59,3 +59,29 @@ func (c *Config) AppsByTier() map[string][]string {
 	}
 	return result
 }
+
+// FilterByCategory returns apps matching the given category
+func (c *Config) FilterByCategory(category string) map[string]App {
+	result := make(map[string]App)
+	for name, app := range c.Apps {
+		if app.Category == category {
+			result[name] = app
+		}
+	}
+	return result
+}
+
+// FilterByInstallType returns apps matching brew or cask
+func (c *Config) FilterByInstallType(types ...string) map[string]App {
+	typeSet := make(map[string]bool)
+	for _, t := range types {
+		typeSet[t] = true
+	}
+	result := make(map[string]App)
+	for name, app := range c.Apps {
+		if typeSet[app.Install] {
+			result[name] = app
+		}
+	}
+	return result
+}
