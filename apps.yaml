@@ -161,6 +161,11 @@ apps:
     tier: auto
     description: Claude macOS app
 
+  twingate:
+    install: cask
+    category: apps
+    description: Zero trust network access platform
+
   # TODO: requires App Store sign-in
   # amphetamine:
   #   install: mas
