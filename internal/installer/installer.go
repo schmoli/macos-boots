@@ -399,7 +399,7 @@ func AutoPull() bool {
 	commits := strings.Split(strings.TrimSpace(string(logOutput)), "\n")
 	for _, msg := range commits {
 		if msg != "" {
-			LogDim("• " + msg)
+			fmt.Println(warnStyle.Render("   • " + msg))
 		}
 	}
 	LogSuccess(fmt.Sprintf("Updated (%d commits)", len(commits)))
