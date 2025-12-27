@@ -327,7 +327,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case logLineMsg:
 		m.logLines = append(m.logLines, string(msg))
 		// Auto-scroll to bottom
-		maxVisible := m.getLogHeight()
+		maxVisible := m.getLogHeight() - 3 // account for title + borders
+		if maxVisible < 1 {
+			maxVisible = 1
+		}
 		if len(m.logLines) > maxVisible {
 			m.logScroll = len(m.logLines) - maxVisible
 		}
@@ -729,8 +732,8 @@ func (m model) View() string {
 	}
 	mainPane = m.renderPane("", content, paneFooter, mainWidth, mainHeight)
 
-	// Render log pane
-	logContent := m.viewLog(logHeight)
+	// Render log pane (subtract 2 for title + border padding)
+	logContent := m.viewLog(logHeight - 3)
 	logPane = m.renderPane("Log", logContent, "", logWidth, logHeight)
 
 	// Combine panes based on layout
