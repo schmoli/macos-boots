@@ -34,7 +34,9 @@ func main() {
 
 	var runErr error
 	switch cmd {
-	case "", "all":
+	case "":
+		installer.Status(cfg)
+	case "all":
 		runErr = runInstall(cfg, "")
 	case "cli":
 		runErr = runInstall(cfg, "cli")
@@ -105,11 +107,11 @@ func printHelp() {
 	fmt.Println("macos-setup - fast macOS setup")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  macos-setup          Install all apps")
+	fmt.Println("  macos-setup          Show status")
+	fmt.Println("  macos-setup all      Install all apps")
 	fmt.Println("  macos-setup cli      Install CLI tools")
 	fmt.Println("  macos-setup apps     Install desktop apps")
 	fmt.Println("  macos-setup mas      Install App Store apps")
 	fmt.Println("  macos-setup update   Upgrade tracked apps")
-	fmt.Println("  macos-setup status   Show installed vs available")
 	fmt.Println("  macos-setup help     Show this help")
 }
