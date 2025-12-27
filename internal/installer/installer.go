@@ -275,21 +275,13 @@ func contains(slice []string, item string) bool {
 func configureApp(name string, app config.App) {
 	home, _ := os.UserHomeDir()
 
-	// Add zsh integration if defined
-	if app.Zsh != "" {
-		if err := addZshIntegration(name, app.Zsh); err != nil {
-			LogFail(fmt.Sprintf("Configuring %s: %v", name, err))
-		} else {
-			LogSuccess(fmt.Sprintf("Configured %s", name))
-		}
-	}
-
 	// Run post_install commands
 	if len(app.PostInstall) > 0 {
+		// Source app's init.zsh if it exists
 		preamble := ""
-		if app.Zsh != "" {
-			zshFile := filepath.Join(home, ".config", "macos-setup", "apps", name, "zshrc.zsh")
-			preamble = fmt.Sprintf("source %s && ", zshFile)
+		initZsh := filepath.Join(home, ".config", "macos-setup", "repo", "apps", app.Category, name, "init.zsh")
+		if _, err := os.Stat(initZsh); err == nil {
+			preamble = fmt.Sprintf("source %s && ", initZsh)
 		}
 
 		for _, cmdStr := range app.PostInstall {

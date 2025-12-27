@@ -2,44 +2,103 @@ package config
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Apps map[string]App `yaml:"apps"`
+	Apps map[string]App
 }
 
 type App struct {
-	Install     string     `yaml:"install"`      // brew, cask, mas, npm, shell
-	Category    string     `yaml:"category"`     // cli, apps, dev, ai, etc.
-	Tier        string     `yaml:"tier"`         // auto, interactive
-	Description string     `yaml:"description"`  // shown in TUI
-	Package     string     `yaml:"package"`      // package name if different from app name
-	ID          int        `yaml:"id"`           // App Store ID (mas only)
-	Config      *AppConfig `yaml:"config"`       // config files to symlink
-	Zsh         string     `yaml:"zsh"`          // zsh module to source
-	PostInstall []string   `yaml:"post_install"` // commands to run after
-	Depends     []string   `yaml:"depends"`      // dependencies to install first
+	Install     string     `yaml:"install"`
+	Category    string     `yaml:"-"` // inferred from path
+	Tier        string     `yaml:"tier"`
+	Description string     `yaml:"description"`
+	Package     string     `yaml:"package"`
+	ID          int        `yaml:"id"`
+	Config      *AppConfig `yaml:"config"`
+	PostInstall []string   `yaml:"post_install"`
+	Depends     []string   `yaml:"depends"`
 }
 
 type AppConfig struct {
-	Source string `yaml:"source"` // path in repo
-	Dest   string `yaml:"dest"`   // path in home
+	Source string `yaml:"source"`
+	Dest   string `yaml:"dest"`
 }
 
-func Load(path string) (*Config, error) {
+// Load scans apps/<category>/<name>/app.yaml files
+func Load(appsDir string) (*Config, error) {
+	cfg := &Config{Apps: make(map[string]App)}
+
+	// Scan category directories
+	categories, err := os.ReadDir(appsDir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, cat := range categories {
+		if !cat.IsDir() {
+			continue
+		}
+		catName := cat.Name()
+		catPath := filepath.Join(appsDir, catName)
+
+		// Scan app directories within category
+		apps, err := os.ReadDir(catPath)
+		if err != nil {
+			continue
+		}
+
+		for _, appDir := range apps {
+			if !appDir.IsDir() {
+				continue
+			}
+			appName := appDir.Name()
+			appYaml := filepath.Join(catPath, appName, "app.yaml")
+
+			data, err := os.ReadFile(appYaml)
+			if err != nil {
+				continue // skip if no app.yaml
+			}
+
+			var app App
+			if err := yaml.Unmarshal(data, &app); err != nil {
+				continue
+			}
+
+			app.Category = catName
+			cfg.Apps[appName] = app
+		}
+	}
+
+	return cfg, nil
+}
+
+// LoadLegacy loads from single apps.yaml (for migration)
+func LoadLegacy(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	var wrapper struct {
+		Apps map[string]App `yaml:"apps"`
+	}
+	if err := yaml.Unmarshal(data, &wrapper); err != nil {
 		return nil, err
 	}
 
-	return &cfg, nil
+	return &Config{Apps: wrapper.Apps}, nil
+}
+
+// HasInitZsh checks if app has init.zsh in repo
+func HasInitZsh(appsDir, category, name string) bool {
+	initPath := filepath.Join(appsDir, category, name, "init.zsh")
+	_, err := os.Stat(initPath)
+	return err == nil
 }
 
 // AppsByCategory returns apps grouped by category
@@ -47,15 +106,6 @@ func (c *Config) AppsByCategory() map[string][]string {
 	result := make(map[string][]string)
 	for name, app := range c.Apps {
 		result[app.Category] = append(result[app.Category], name)
-	}
-	return result
-}
-
-// AppsByTier returns apps grouped by tier
-func (c *Config) AppsByTier() map[string][]string {
-	result := make(map[string][]string)
-	for name, app := range c.Apps {
-		result[app.Tier] = append(result[app.Tier], name)
 	}
 	return result
 }
@@ -71,15 +121,15 @@ func (c *Config) FilterByCategory(category string) map[string]App {
 	return result
 }
 
-// FilterByInstallType returns apps matching brew or cask
+// FilterByInstallType returns apps matching install types
 func (c *Config) FilterByInstallType(types ...string) map[string]App {
 	typeSet := make(map[string]bool)
 	for _, t := range types {
-		typeSet[t] = true
+		typeSet[strings.ToLower(t)] = true
 	}
 	result := make(map[string]App)
 	for name, app := range c.Apps {
-		if typeSet[app.Install] {
+		if typeSet[strings.ToLower(app.Install)] {
 			result[name] = app
 		}
 	}
