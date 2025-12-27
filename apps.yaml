@@ -167,6 +167,11 @@ apps:
     category: apps
     description: Zero trust network access platform
 
+  windows-app:
+    install: cask
+    category: apps
+    description: Connect to Windows
+
   # TODO: requires App Store sign-in
   # amphetamine:
   #   install: mas
