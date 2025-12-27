@@ -7,3 +7,4 @@ Log of apps added via `/add-app` skill.
 2025-12-26 | gh | cli | GitHub command-line tool
 2025-12-26 | aws-cdk | cli | AWS Cloud Development Kit (wip)
 2025-12-26 | awscli | cli | Official AWS CLI
+2025-12-26 | uv | cli | Fast Python package manager

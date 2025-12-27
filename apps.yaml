@@ -94,6 +94,12 @@ apps:
     tier: auto
     description: Terminal file manager
 
+  uv:
+    install: brew
+    category: cli
+    tier: auto
+    description: Fast Python package manager
+
   fnm:
     install: brew
     category: dev
