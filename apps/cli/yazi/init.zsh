@@ -1,1 +1,1 @@
-alias ya=yazi
+alias yz=yazi
