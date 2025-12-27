@@ -29,8 +29,8 @@ Keywords: `to`, `depends on`, `wip` (order flexible)
    - Infer install type from source (formula → brew, cask → cask)
 
 4. **Resolve category** - If not provided:
-   - Infer from app type (CLI tools → cli, GUI → apps, etc.)
-   - If uncertain, ask with choices: cli / dev / ai / apps / utils
+   - Infer from install type: cask/mas → apps, brew/npm/shell → cli
+   - If uncertain, ask with choices: cli / apps
 
 5. **Resolve dependencies**
    - npm packages → depends on fnm
@@ -69,8 +69,8 @@ Keywords: `to`, `depends on`, `wip` (order flexible)
 ## Examples
 
 ```
-/add-app vscode to dev
-/add-app docker-compose to dev depends on docker
+/add-app vscode to apps
+/add-app docker-compose to cli depends on docker
 /add-app something for markdown editing
 ```
 

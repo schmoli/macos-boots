@@ -102,7 +102,7 @@ apps:
 
   fnm:
     install: brew
-    category: dev
+    category: cli
     tier: required
     description: Fast Node.js version manager
     zsh: |
@@ -114,14 +114,14 @@ apps:
 
   mas:
     install: brew
-    category: utils
+    category: cli
     tier: required
     description: Mac App Store CLI
 
   claude-code:
     install: npm
     package: "@anthropic-ai/claude-code"
-    category: ai
+    category: cli
     tier: auto
     description: Claude Code CLI
     zsh: |
@@ -129,7 +129,7 @@ apps:
 
   claude:
     install: cask
-    category: ai
+    category: apps
     tier: auto
     description: Claude macOS app
 
@@ -137,6 +137,6 @@ apps:
   # amphetamine:
   #   install: mas
   #   id: 937984704
-  #   category: utils
+  #   category: apps
   #   tier: auto
   #   description: Keep Mac awake

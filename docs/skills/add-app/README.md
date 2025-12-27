@@ -8,7 +8,7 @@ Reference docs for the `/add-app` skill. Skill reads all `.md` files in this dir
 apps:
   <app-key>:                    # lowercase, hyphenated (e.g., visual-studio-code)
     install: brew|cask|npm|mas|shell
-    category: cli|dev|ai|apps|utils
+    category: cli|apps
     description: string         # short, no period
     tier: required|auto         # optional, omit for auto
     package: string             # optional, if pkg name differs from key
@@ -38,11 +38,10 @@ apps:
 
 | Category | Description |
 |----------|-------------|
-| cli | Command-line tools, terminal utilities |
-| dev | Development tools, IDEs, language runtimes |
-| ai | AI tools, assistants |
-| apps | General macOS applications |
-| utils | System utilities |
+| cli | Command-line tools, terminal utilities, dev tools |
+| apps | GUI applications (.app bundles, casks, App Store) |
+
+**Inference**: cask/mas → apps, brew/npm/shell → cli
 
 ## Tiers
 
@@ -86,11 +85,11 @@ jq:
   description: JSON processor
 ```
 
-### Cask with description
+### Cask (GUI app)
 ```yaml
 visual-studio-code:
   install: cask
-  category: dev
+  category: apps
   description: Code editor by Microsoft
 ```
 
@@ -99,7 +98,7 @@ visual-studio-code:
 claude-code:
   install: npm
   package: "@anthropic-ai/claude-code"
-  category: ai
+  category: cli
   description: Claude Code CLI
 ```
 
@@ -117,7 +116,7 @@ zoxide:
 ```yaml
 fnm:
   install: brew
-  category: dev
+  category: cli
   tier: required
   description: Fast Node.js version manager
   zsh: |
@@ -132,6 +131,6 @@ fnm:
 amphetamine:
   install: mas
   id: 937984704
-  category: utils
+  category: apps
   description: Keep Mac awake
 ```
