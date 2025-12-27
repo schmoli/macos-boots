@@ -162,6 +162,11 @@ apps:
     tier: auto
     description: Claude macOS app
 
+  cleanshot:
+    install: cask
+    category: apps
+    description: Screen capturing tool
+
   daisydisk:
     install: cask
     category: apps
