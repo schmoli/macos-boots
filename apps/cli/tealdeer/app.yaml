@@ -1,0 +1,4 @@
+install: brew
+description: Fast tldr pages client in Rust
+post_install:
+  - tldr --update

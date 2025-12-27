@@ -1,0 +1,2 @@
+install: cask
+description: Container platform with Docker Engine and Compose

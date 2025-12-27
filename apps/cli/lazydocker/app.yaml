@@ -1,0 +1,2 @@
+install: brew
+description: TUI for docker and docker-compose management

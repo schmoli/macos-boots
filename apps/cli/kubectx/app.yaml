@@ -1,0 +1,2 @@
+install: brew
+description: Switch between kubectl contexts (includes kubens)
