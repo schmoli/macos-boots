@@ -34,6 +34,7 @@ apps:
     post_install:
       - fnm install 24
       - fnm default 24
+      - node --version
 
   claude-code:
     install: npm
