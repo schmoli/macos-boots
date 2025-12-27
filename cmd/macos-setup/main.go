@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/schmoli/macos-setup/internal/config"
 	"github.com/schmoli/macos-setup/internal/tui"
 )
 
@@ -14,6 +15,12 @@ func main() {
 		switch os.Args[1] {
 		case "update":
 			if err := runUpdate(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "install":
+			if err := runInstallAll(); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
@@ -39,6 +46,7 @@ func printHelp() {
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  macos-setup          Launch TUI")
+	fmt.Println("  macos-setup install  Install all apps directly")
 	fmt.Println("  macos-setup update   Pull latest and rebuild")
 	fmt.Println("  macos-setup help     Show this help")
 }
@@ -112,5 +120,90 @@ func runUpdate() error {
 
 	fmt.Println()
 	fmt.Println("✓ Updated!")
+	return nil
+}
+
+func runInstallAll() error {
+	home, _ := os.UserHomeDir()
+	configPath := filepath.Join(home, ".config", "macos-setup", "repo", "apps.yaml")
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	fmt.Println("Installing all apps...")
+	fmt.Println()
+
+	var installed, failed []string
+
+	for name, app := range cfg.Apps {
+		// Skip required tier (already installed at startup)
+		if app.Tier == "required" {
+			continue
+		}
+
+		fmt.Printf("→ Installing %s...\n", name)
+
+		var cmd *exec.Cmd
+		switch app.Install {
+		case "brew":
+			cmd = exec.Command("/opt/homebrew/bin/brew", "install", name)
+		case "cask":
+			cmd = exec.Command("/opt/homebrew/bin/brew", "install", "--cask", name)
+		case "npm":
+			pkg := name
+			if app.Package != "" {
+				pkg = app.Package
+			}
+			cmd = exec.Command("npm", "install", "-g", pkg)
+		case "mas":
+			cmd = exec.Command("mas", "install", fmt.Sprintf("%d", app.ID))
+		case "shell":
+			// Shell-only, just add zsh integration
+			cmd = nil
+		default:
+			fmt.Printf("  ⚠ Unknown install type: %s\n", app.Install)
+			continue
+		}
+
+		if cmd != nil {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("  ✗ Failed\n")
+				failed = append(failed, name)
+				continue
+			}
+		}
+
+		// Add zsh integration if defined
+		if app.Zsh != "" {
+			zshDir := filepath.Join(home, ".config", "macos-setup", "apps", name)
+			os.MkdirAll(zshDir, 0755)
+			zshPath := filepath.Join(zshDir, "zshrc.zsh")
+			os.WriteFile(zshPath, []byte(app.Zsh), 0644)
+		}
+
+		// Run post_install
+		for _, postCmd := range app.PostInstall {
+			fmt.Printf("  → %s\n", postCmd)
+			c := exec.Command("zsh", "-c", postCmd)
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+			c.Run()
+		}
+
+		fmt.Printf("  ✓ Done\n")
+		installed = append(installed, name)
+	}
+
+	fmt.Println()
+	fmt.Printf("✓ Installed %d apps", len(installed))
+	if len(failed) > 0 {
+		fmt.Printf(", %d failed", len(failed))
+	}
+	fmt.Println()
+
 	return nil
 }
