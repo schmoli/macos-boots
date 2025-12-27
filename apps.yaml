@@ -56,9 +56,10 @@ apps:
     tier: auto
     description: Claude macOS app
 
-  amphetamine:
-    install: mas
-    id: 937984704
-    category: utils
-    tier: auto
-    description: Keep Mac awake
+  # TODO: requires App Store sign-in
+  # amphetamine:
+  #   install: mas
+  #   id: 937984704
+  #   category: utils
+  #   tier: auto
+  #   description: Keep Mac awake
