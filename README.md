@@ -41,13 +41,13 @@ macos-setup
 
 First run installs Homebrew and Go, builds the TUI, then launches it.
 
-## Update
+## Commands
 
 ```zsh
-macos-setup update
+macos-setup          # Launch TUI
+macos-setup install  # Install all apps directly (skips already installed)
+macos-setup update   # Pull latest and rebuild
 ```
-
-This pulls the latest code and rebuilds.
 
 ## Uninstall
 
