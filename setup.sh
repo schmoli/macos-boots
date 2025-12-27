@@ -24,9 +24,19 @@ if ! xcode-select -p &>/dev/null; then
   exit 1
 fi
 
-# If binary exists and is up to date, just run it
+# If binary exists, just run it
 if [[ -x "$BINARY" ]]; then
   exec "$BINARY" "$@"
+fi
+
+# If arguments passed but no binary, need first time setup
+if [[ $# -gt 0 ]]; then
+  echo ""
+  echo "${YELLOW}First time setup required${NC}"
+  echo ""
+  echo "Run:  macos-setup"
+  echo ""
+  exit 1
 fi
 
 # First time setup - install dependencies and build
