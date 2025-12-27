@@ -16,8 +16,7 @@ import (
 var (
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("205")).
-			MarginBottom(1)
+			Foreground(lipgloss.Color("205"))
 
 	categoryStyle = lipgloss.NewStyle().
 			PaddingLeft(2)
@@ -31,8 +30,7 @@ var (
 			Foreground(lipgloss.Color("241"))
 
 	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241")).
-			MarginTop(1)
+			Foreground(lipgloss.Color("241"))
 
 	appStyle = lipgloss.NewStyle().
 			PaddingLeft(4)
@@ -44,6 +42,11 @@ var (
 
 	progressStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("39"))
+
+	borderStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("62")).
+			Padding(1, 2)
 )
 
 type category struct {
@@ -78,6 +81,8 @@ type model struct {
 	progressMsg  string
 	progressIdx  int
 	progressApps []string
+	width        int
+	height       int
 }
 
 func initialModel() model {
@@ -178,7 +183,6 @@ func (c *category) getSelectedNames() []string {
 	return names
 }
 
-// Messages for async operations
 type installCompleteMsg struct {
 	name    string
 	success bool
@@ -211,13 +215,17 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
 	case installCompleteMsg:
 		return m.handleInstallComplete(msg)
 	case removeCompleteMsg:
 		return m.handleRemoveComplete(msg)
 	case tea.KeyMsg:
 		if m.state != stateIdle {
-			return m, nil // Ignore keys during install/remove
+			return m, nil
 		}
 		if m.inCategory {
 			return m.updateInCategory(msg)
@@ -230,7 +238,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd) {
 	cat := &m.categories[m.cursor]
 
-	// Mark as installed and deselect
 	for i := range cat.apps {
 		if cat.apps[i].name == msg.name {
 			cat.apps[i].installed = msg.success
@@ -241,14 +248,12 @@ func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd
 
 	m.progressIdx++
 
-	// Continue with next app or finish
 	if m.progressIdx < len(m.progressApps) {
 		nextApp := m.progressApps[m.progressIdx]
 		m.progressMsg = fmt.Sprintf("Installing %s... (%d/%d)", nextApp, m.progressIdx+1, len(m.progressApps))
 		return m, installAppCmd(nextApp)
 	}
 
-	// Done
 	m.state = stateIdle
 	m.progressMsg = ""
 	m.progressApps = nil
@@ -258,7 +263,6 @@ func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd
 func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) {
 	cat := &m.categories[m.cursor]
 
-	// Mark as uninstalled and deselect
 	for i := range cat.apps {
 		if cat.apps[i].name == msg.name {
 			if msg.success {
@@ -271,14 +275,12 @@ func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) 
 
 	m.progressIdx++
 
-	// Continue with next app or finish
 	if m.progressIdx < len(m.progressApps) {
 		nextApp := m.progressApps[m.progressIdx]
 		m.progressMsg = fmt.Sprintf("Removing %s... (%d/%d)", nextApp, m.progressIdx+1, len(m.progressApps))
 		return m, removeAppCmd(nextApp)
 	}
 
-	// Done
 	m.state = stateIdle
 	m.progressMsg = ""
 	m.progressApps = nil
@@ -322,20 +324,16 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.appCursor++
 		}
 	case key.Matches(msg, keys.Space):
-		// Toggle selection
 		cat.apps[m.appCursor].selected = !cat.apps[m.appCursor].selected
 	case key.Matches(msg, keys.SelectAll):
-		// Select all uninstalled
 		for i := range cat.apps {
 			if !cat.apps[i].installed {
 				cat.apps[i].selected = true
 			}
 		}
 	case key.Matches(msg, keys.Install):
-		// Install selected
 		selected := cat.getSelectedNames()
 		if len(selected) > 0 {
-			// Filter to only uninstalled
 			var toInstall []string
 			for _, name := range selected {
 				for _, app := range cat.apps {
@@ -354,10 +352,8 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case key.Matches(msg, keys.Remove):
-		// Remove selected
 		selected := cat.getSelectedNames()
 		if len(selected) > 0 {
-			// Filter to only installed
 			var toRemove []string
 			for _, name := range selected {
 				for _, app := range cat.apps {
@@ -384,11 +380,40 @@ func (m model) View() string {
 		return ""
 	}
 
+	var content string
 	if m.inCategory {
-		return m.viewCategory()
+		content = m.viewCategory()
+	} else {
+		content = m.viewMain()
 	}
 
-	return m.viewMain()
+	// Apply border and size to fill terminal
+	if m.width > 0 && m.height > 0 {
+		// Account for border (2) and padding (2*2)
+		innerWidth := m.width - 6
+		innerHeight := m.height - 4
+
+		if innerWidth < 20 {
+			innerWidth = 20
+		}
+		if innerHeight < 10 {
+			innerHeight = 10
+		}
+
+		// Pad content to fill the space
+		lines := strings.Split(content, "\n")
+		for len(lines) < innerHeight {
+			lines = append(lines, "")
+		}
+		content = strings.Join(lines[:innerHeight], "\n")
+
+		return borderStyle.
+			Width(innerWidth).
+			Height(innerHeight).
+			Render(content)
+	}
+
+	return content
 }
 
 func (m model) viewMain() string {
@@ -416,7 +441,7 @@ func (m model) viewMain() string {
 		}
 	}
 
-	s += helpStyle.Render("\n↑/↓ navigate • enter select • q quit")
+	s += "\n" + helpStyle.Render("↑/↓ navigate • enter select • q quit")
 
 	return s
 }
@@ -426,13 +451,11 @@ func (m model) viewCategory() string {
 	s := titleStyle.Render(cat.name) + "\n\n"
 
 	for i, app := range cat.apps {
-		// Checkbox
 		checkbox := "[ ]"
 		if app.selected {
 			checkbox = "[x]"
 		}
 
-		// Install status
 		status := "○"
 		if app.installed {
 			status = "✓"
@@ -447,12 +470,10 @@ func (m model) viewCategory() string {
 		}
 	}
 
-	// Progress message
 	if m.progressMsg != "" {
 		s += "\n" + progressStyle.Render(m.progressMsg)
 	}
 
-	// Help
 	var helpParts []string
 	helpParts = append(helpParts, "↑/↓ navigate", "space select", "a select all")
 
@@ -463,7 +484,7 @@ func (m model) viewCategory() string {
 	}
 	helpParts = append(helpParts, "esc back", "q quit")
 
-	s += helpStyle.Render("\n" + strings.Join(helpParts, " • "))
+	s += "\n" + helpStyle.Render(strings.Join(helpParts, " • "))
 
 	return s
 }
