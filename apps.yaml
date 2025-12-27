@@ -53,7 +53,7 @@ apps:
       - fnm default 24
       - npm install -g npm@latest
 
-  claude:
+  claude-code:
     install: npm
     package: "@anthropic-ai/claude-code"
     category: ai
@@ -63,3 +63,9 @@ apps:
       - fnm
     zsh: |
       alias claude-agent='claude --dangerously-skip-permissions'
+
+  claude:
+    install: cask
+    category: ai
+    tier: auto
+    description: Claude macOS app

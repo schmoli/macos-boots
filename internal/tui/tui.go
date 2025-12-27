@@ -131,7 +131,7 @@ func buildCategories(cfg *config.Config) []category {
 	}
 
 	for name, app := range cfg.Apps {
-		installed := isInstalled(name, app.Install)
+		installed := isInstalledWithPkg(name, app.Install, app.Package)
 		item := appItem{
 			name:        name,
 			description: app.Description,
@@ -155,17 +155,19 @@ func buildCategories(cfg *config.Config) []category {
 	return cats
 }
 
-func isInstalled(name string, installType string) bool {
+func isInstalledWithPkg(name, installType, pkgName string) bool {
+	if pkgName == "" {
+		pkgName = name
+	}
 	switch installType {
 	case "brew":
-		cmd := exec.Command("/opt/homebrew/bin/brew", "list", name)
+		cmd := exec.Command("/opt/homebrew/bin/brew", "list", pkgName)
 		return cmd.Run() == nil
 	case "cask":
-		cmd := exec.Command("/opt/homebrew/bin/brew", "list", "--cask", name)
+		cmd := exec.Command("/opt/homebrew/bin/brew", "list", "--cask", pkgName)
 		return cmd.Run() == nil
 	case "npm":
-		// Check if command exists (npm packages install binaries)
-		cmd := exec.Command("which", name)
+		cmd := exec.Command("npm", "list", "-g", pkgName)
 		return cmd.Run() == nil
 	case "shell":
 		// Shell-only apps check if their config exists
@@ -176,6 +178,16 @@ func isInstalled(name string, installType string) bool {
 	default:
 		return false
 	}
+}
+
+func isInstalled(name string, installType string) bool {
+	pkgName := name
+	if appConfig != nil {
+		if app, ok := appConfig.Apps[name]; ok && app.Package != "" {
+			pkgName = app.Package
+		}
+	}
+	return isInstalledWithPkg(name, installType, pkgName)
 }
 
 func (c *category) installedCount() int {
