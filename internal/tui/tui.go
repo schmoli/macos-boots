@@ -1122,8 +1122,12 @@ func (m model) View() string {
 	}
 	paneFooter := ""
 	if m.progressMsg != "" {
-		spinner := spinnerFrames[m.spinnerIdx]
-		paneFooter = progressStyle.Render(spinner + " " + m.progressMsg)
+		if m.state != stateIdle {
+			spinner := spinnerFrames[m.spinnerIdx]
+			paneFooter = progressStyle.Render(spinner + " " + m.progressMsg)
+		} else {
+			paneFooter = progressStyle.Render(m.progressMsg)
+		}
 	}
 	mainPane = m.renderPane("", content, paneFooter, mainWidth, mainHeight)
 
