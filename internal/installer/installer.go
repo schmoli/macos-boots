@@ -360,6 +360,11 @@ func AutoPull() bool {
 	home, _ := os.UserHomeDir()
 	repoDir := filepath.Join(home, ".config", "macos-setup", "repo")
 
+	// Reset go files to avoid pull conflicts from go mod tidy
+	resetCmd := exec.Command("git", "checkout", "go.mod", "go.sum")
+	resetCmd.Dir = repoDir
+	resetCmd.Run()
+
 	// Fetch
 	cmd := exec.Command("git", "fetch", "origin")
 	cmd.Dir = repoDir
