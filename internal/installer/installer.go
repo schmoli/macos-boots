@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/schmoli/macos-setup/internal/config"
@@ -239,7 +240,87 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-// configureApp is a placeholder - will be implemented in Task 4
 func configureApp(name string, app config.App) {
-	// TODO: implement in Task 4
+	home, _ := os.UserHomeDir()
+
+	// Add zsh integration if defined
+	if app.Zsh != "" {
+		fmt.Printf("Configuring %s...", name)
+		if err := addZshIntegration(name, app.Zsh); err != nil {
+			fmt.Printf(" failed: %v\n", err)
+		} else {
+			fmt.Printf(" done\n")
+		}
+	}
+
+	// Run post_install commands
+	if len(app.PostInstall) > 0 {
+		preamble := ""
+		if app.Zsh != "" {
+			zshFile := filepath.Join(home, ".config", "macos-setup", "apps", name, "zshrc.zsh")
+			preamble = fmt.Sprintf("source %s && ", zshFile)
+		}
+
+		for _, cmdStr := range app.PostInstall {
+			fmt.Printf("  → %s\n", cmdStr)
+			fullCmd := preamble + cmdStr
+			cmd := exec.Command("zsh", "-c", fullCmd)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			cmd.Run()
+		}
+	}
+}
+
+func addZshIntegration(name, zshContent string) error {
+	home, _ := os.UserHomeDir()
+	baseDir := filepath.Join(home, ".config", "macos-setup")
+	appDir := filepath.Join(baseDir, "apps", name)
+
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		return err
+	}
+
+	// Write init.zsh (sources all app zsh files)
+	initPath := filepath.Join(baseDir, "init.zsh")
+	initContent := `# macos-setup shell integration (auto-generated)
+for f in $HOME/.config/macos-setup/apps/*/*.zsh(N); do
+  source "$f"
+done
+`
+	if err := os.WriteFile(initPath, []byte(initContent), 0644); err != nil {
+		return err
+	}
+
+	// Ensure .zshrc sources init.zsh
+	zshrcPath := filepath.Join(home, ".zshrc")
+	existing, _ := os.ReadFile(zshrcPath)
+	sourceLine := "source ~/.config/macos-setup/init.zsh"
+	if !strings.Contains(string(existing), sourceLine) {
+		f, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		f.WriteString(fmt.Sprintf("\n# macos-setup\n%s\n", sourceLine))
+		f.Close()
+
+		// Mark zshrc modified
+		markerPath := filepath.Join(baseDir, ".zshrc-modified")
+		os.WriteFile(markerPath, []byte{}, 0644)
+	}
+
+	// Write app zshrc
+	appZshPath := filepath.Join(appDir, "zshrc.zsh")
+	return os.WriteFile(appZshPath, []byte(strings.TrimSpace(zshContent)+"\n"), 0644)
+}
+
+// CheckZshrcModified returns true if zshrc was modified, clears the marker
+func CheckZshrcModified() bool {
+	home, _ := os.UserHomeDir()
+	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
+	if _, err := os.Stat(markerPath); err == nil {
+		os.Remove(markerPath)
+		return true
+	}
+	return false
 }
