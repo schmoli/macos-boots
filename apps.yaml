@@ -111,6 +111,8 @@ apps:
     category: cli
     tier: auto
     description: Terminal file manager
+    zsh: |
+      alias ya=yazi
 
   tmux:
     install: brew
