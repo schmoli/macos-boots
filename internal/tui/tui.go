@@ -122,12 +122,16 @@ func initialModel() model {
 
 func buildCategories(cfg *config.Config) []category {
 	catMap := make(map[string][]appItem)
-	catNames := map[string]string{
-		"cli":  "CLI Tools",
-		"dev":  "Developer Tools",
-		"ai":   "AI Tools",
-		"apps": "Desktop Apps",
-		"mas":  "App Store",
+	// Ordered list of categories
+	catOrder := []struct {
+		key  string
+		name string
+	}{
+		{"cli", "CLI Tools"},
+		{"dev", "Developer Tools"},
+		{"ai", "AI Tools"},
+		{"apps", "Desktop Apps"},
+		{"mas", "App Store"},
 	}
 
 	for name, app := range cfg.Apps {
@@ -142,11 +146,11 @@ func buildCategories(cfg *config.Config) []category {
 	}
 
 	var cats []category
-	for key, displayName := range catNames {
-		if apps, ok := catMap[key]; ok && len(apps) > 0 {
+	for _, c := range catOrder {
+		if apps, ok := catMap[c.key]; ok && len(apps) > 0 {
 			cats = append(cats, category{
-				name: displayName,
-				key:  key,
+				name: c.name,
+				key:  c.key,
 				apps: apps,
 			})
 		}
