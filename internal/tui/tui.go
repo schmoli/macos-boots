@@ -847,9 +847,19 @@ func (m model) viewMainContent() string {
 
 	for i, cat := range m.categories {
 		installed := cat.installedCount()
+		selected := cat.selectedCount()
 		total := len(cat.apps)
 		status := fmt.Sprintf("[%d/%d]", installed, total)
 
+		// Selection checkbox: [ ] none, [~] some, [x] all
+		checkbox := "[ ]"
+		if selected == total && total > 0 {
+			checkbox = "[x]"
+		} else if selected > 0 {
+			checkbox = "[~]"
+		}
+
+		// Install indicator
 		indicator := "○"
 		if installed > 0 {
 			indicator = "●"
@@ -858,7 +868,7 @@ func (m model) viewMainContent() string {
 			indicator = "✓"
 		}
 
-		line := fmt.Sprintf("%s %-20s %s  ▸", indicator, cat.name, statusStyle.Render(status))
+		line := fmt.Sprintf("%s %s %-18s %s  ▸", checkbox, indicator, cat.name, statusStyle.Render(status))
 
 		if i == m.cursor {
 			s += selectedStyle.Render(line) + "\n"
