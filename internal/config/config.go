@@ -11,14 +11,15 @@ type Config struct {
 }
 
 type App struct {
-	Install     string   `yaml:"install"`     // brew, cask, mas, script
-	Category    string   `yaml:"category"`    // cli, apps, dev, etc.
-	Tier        string   `yaml:"tier"`        // auto, interactive
-	Description string   `yaml:"description"` // shown in TUI
-	ID          int      `yaml:"id"`          // App Store ID (mas only)
-	Config      *AppConfig `yaml:"config"`    // config files to symlink
-	Zsh         string   `yaml:"zsh"`         // zsh module to source
-	PostInstall []string `yaml:"post_install"` // commands to run after
+	Install     string     `yaml:"install"`      // brew, cask, mas, script
+	Category    string     `yaml:"category"`     // cli, apps, dev, etc.
+	Tier        string     `yaml:"tier"`         // auto, interactive
+	Description string     `yaml:"description"`  // shown in TUI
+	ID          int        `yaml:"id"`           // App Store ID (mas only)
+	Config      *AppConfig `yaml:"config"`       // config files to symlink
+	Zsh         string     `yaml:"zsh"`          // zsh module to source
+	PostInstall []string   `yaml:"post_install"` // commands to run after
+	Depends     []string   `yaml:"depends"`      // dependencies to install first
 }
 
 type AppConfig struct {

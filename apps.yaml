@@ -28,6 +28,21 @@ apps:
     category: dev
     tier: auto
     description: Version manager (node, python, etc)
+    depends:
+      - gpg
+      - gawk
     zsh: |
       # asdf version manager
       . /opt/homebrew/opt/asdf/libexec/asdf.sh
+
+  gpg:
+    install: brew
+    category: dev
+    tier: auto
+    description: GNU Privacy Guard (for asdf plugins)
+
+  gawk:
+    install: brew
+    category: dev
+    tier: auto
+    description: GNU awk (for asdf plugins)

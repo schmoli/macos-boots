@@ -357,6 +357,30 @@ func (m model) getLogHeight() int {
 	return m.height - 6 // full height minus borders/footer
 }
 
+// addWithDeps adds an app and its dependencies to the install list
+func (m model) addWithDeps(name string, list []string, seen map[string]bool) []string {
+	if seen[name] {
+		return list
+	}
+	seen[name] = true
+
+	// Check if already installed
+	if m.config != nil {
+		if app, ok := m.config.Apps[name]; ok {
+			// Add dependencies first (recursively)
+			for _, dep := range app.Depends {
+				if !isInstalled(dep, "brew") {
+					list = m.addWithDeps(dep, list, seen)
+				}
+			}
+		}
+	}
+
+	// Add the app itself
+	list = append(list, name)
+	return list
+}
+
 func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd) {
 	cat := &m.categories[m.cursor]
 
@@ -469,10 +493,12 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		selected := cat.getSelectedNames()
 		if len(selected) > 0 {
 			var toInstall []string
+			seen := make(map[string]bool)
 			for _, name := range selected {
 				for _, app := range cat.apps {
 					if app.name == name && !app.installed {
-						toInstall = append(toInstall, name)
+						// Add dependencies first
+						toInstall = m.addWithDeps(name, toInstall, seen)
 						break
 					}
 				}
