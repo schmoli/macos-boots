@@ -1,1 +1,0 @@
-#source <(stern --completion=zsh)

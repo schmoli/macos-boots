@@ -1,4 +1,4 @@
- aws-cdk completions (yargs-based)
+# aws-cdk completions (yargs-based)
 _cdk_yargs_completions() {
   local reply
   local si=$IFS

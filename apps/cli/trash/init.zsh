@@ -1,5 +1,5 @@
- trash is keg-only, add to PATH
+# trash is keg-only, add to PATH
 export PATH="/opt/homebrew/opt/trash/bin:$PATH"
 
- safer rm alias
+# safer rm alias
 alias rm='trash'
