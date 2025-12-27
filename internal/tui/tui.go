@@ -95,6 +95,7 @@ type model struct {
 	layout       layoutMode
 	logLines     []string
 	logScroll    int
+	requiredDeps map[string][]string // dep name -> apps requiring it
 }
 
 func initialModel() model {
@@ -104,18 +105,18 @@ func initialModel() model {
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		return model{
-			categories: []category{
-				{name: "CLI Tools", key: "cli"},
-			},
+			categories:   []category{{name: "CLI Tools", key: "cli"}},
+			requiredDeps: make(map[string][]string),
 		}
 	}
 
 	cats := buildCategories(cfg)
 
 	return model{
-		config:     cfg,
-		categories: cats,
-		cursor:     0,
+		config:       cfg,
+		categories:   cats,
+		cursor:       0,
+		requiredDeps: make(map[string][]string),
 	}
 }
 
@@ -381,26 +382,53 @@ func (m model) addWithDeps(name string, list []string, seen map[string]bool) []s
 	return list
 }
 
-// selectDeps selects all dependencies of an app in the UI
-func (m *model) selectDeps(name string) {
+// addDeps adds dependencies for an app to requiredDeps
+func (m *model) addDeps(appName string) {
 	if m.config == nil {
 		return
 	}
-	app, ok := m.config.Apps[name]
+	app, ok := m.config.Apps[appName]
 	if !ok {
 		return
 	}
 
 	for _, dep := range app.Depends {
-		// Find and select the dep in any category
-		for catIdx := range m.categories {
-			for appIdx := range m.categories[catIdx].apps {
-				if m.categories[catIdx].apps[appIdx].name == dep {
-					m.categories[catIdx].apps[appIdx].selected = true
-					// Recursively select deps of deps
-					m.selectDeps(dep)
-				}
+		// Add this app to the list of apps requiring this dep
+		found := false
+		for _, existing := range m.requiredDeps[dep] {
+			if existing == appName {
+				found = true
+				break
 			}
+		}
+		if !found {
+			m.requiredDeps[dep] = append(m.requiredDeps[dep], appName)
+		}
+	}
+}
+
+// removeDeps removes dependencies for an app from requiredDeps
+func (m *model) removeDeps(appName string) {
+	if m.config == nil {
+		return
+	}
+	app, ok := m.config.Apps[appName]
+	if !ok {
+		return
+	}
+
+	for _, dep := range app.Depends {
+		// Remove this app from the list of apps requiring this dep
+		newList := []string{}
+		for _, existing := range m.requiredDeps[dep] {
+			if existing != appName {
+				newList = append(newList, existing)
+			}
+		}
+		if len(newList) == 0 {
+			delete(m.requiredDeps, dep)
+		} else {
+			m.requiredDeps[dep] = newList
 		}
 	}
 }
@@ -502,9 +530,10 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Space):
 		app := &m.categories[m.cursor].apps[m.appCursor]
 		app.selected = !app.selected
-		// If selecting, also select dependencies
 		if app.selected {
-			m.selectDeps(app.name)
+			m.addDeps(app.name)
+		} else {
+			m.removeDeps(app.name)
 		}
 	case key.Matches(msg, keys.SelectAll):
 		// Toggle: if any unselected, select all; otherwise deselect all
@@ -516,29 +545,45 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		for i := range m.categories[m.cursor].apps {
+			wasSelected := m.categories[m.cursor].apps[i].selected
 			m.categories[m.cursor].apps[i].selected = anyUnselected
+			appName := m.categories[m.cursor].apps[i].name
+			if anyUnselected && !wasSelected {
+				m.addDeps(appName)
+			} else if !anyUnselected && wasSelected {
+				m.removeDeps(appName)
+			}
 		}
 	case key.Matches(msg, keys.Install):
+		var toInstall []string
+		seen := make(map[string]bool)
+
+		// Add dependencies first (not already installed)
+		for dep := range m.requiredDeps {
+			if !seen[dep] && !isInstalled(dep, "brew") {
+				toInstall = append(toInstall, dep)
+				seen[dep] = true
+			}
+		}
+
+		// Add selected apps
 		selected := cat.getSelectedNames()
-		if len(selected) > 0 {
-			var toInstall []string
-			seen := make(map[string]bool)
-			for _, name := range selected {
-				for _, app := range cat.apps {
-					if app.name == name && !app.installed {
-						// Add dependencies first
-						toInstall = m.addWithDeps(name, toInstall, seen)
-						break
-					}
+		for _, name := range selected {
+			for _, app := range cat.apps {
+				if app.name == name && !app.installed && !seen[name] {
+					toInstall = append(toInstall, name)
+					seen[name] = true
+					break
 				}
 			}
-			if len(toInstall) > 0 {
-				m.state = stateInstalling
-				m.progressApps = toInstall
-				m.progressIdx = 0
-				m.progressMsg = fmt.Sprintf("Installing %s... (1/%d)", toInstall[0], len(toInstall))
-				return m, installAppCmd(toInstall[0])
-			}
+		}
+
+		if len(toInstall) > 0 {
+			m.state = stateInstalling
+			m.progressApps = toInstall
+			m.progressIdx = 0
+			m.progressMsg = fmt.Sprintf("Installing %s... (1/%d)", toInstall[0], len(toInstall))
+			return m, installAppCmd(toInstall[0])
 		}
 	case key.Matches(msg, keys.Remove):
 		selected := cat.getSelectedNames()
@@ -793,6 +838,20 @@ func (m model) viewCategoryContent() string {
 		if i == m.appCursor {
 			s += appSelectedStyle.Render(line) + "\n"
 		} else {
+			s += appStyle.Render(line) + "\n"
+		}
+	}
+
+	// Show dependencies section if any
+	if len(m.requiredDeps) > 0 {
+		s += "\n" + statusStyle.Render("Dependencies:") + "\n"
+		for dep, apps := range m.requiredDeps {
+			installed := "○"
+			if isInstalled(dep, "brew") {
+				installed = "✓"
+			}
+			appList := strings.Join(apps, ", ")
+			line := fmt.Sprintf("     %s %-12s %s", installed, dep, statusStyle.Render("["+appList+"]"))
 			s += appStyle.Render(line) + "\n"
 		}
 	}
