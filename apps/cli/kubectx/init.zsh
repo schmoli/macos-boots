@@ -1,2 +1,2 @@
-alias kctx='kubectx'
-alias kns='kubens'
+#alias kctx='kubectx'
+#alias kns='kubens'
