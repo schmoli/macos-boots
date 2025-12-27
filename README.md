@@ -81,4 +81,4 @@ Use the `/add-app` Claude Code skill to add new apps:
 
 The skill reads `docs/skills/add-app/` for schema reference, verifies packages via `brew search`, shows a YAML preview, and auto-commits with conventional format.
 
-See `.claude/skills/add-app.md` for full process.
+See `.claude/commands/add-app.md` for full process.
