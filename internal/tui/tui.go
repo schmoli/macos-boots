@@ -238,9 +238,19 @@ type logLineMsg string
 var program *tea.Program
 var appConfig *config.Config
 
+func streamToLog(r io.Reader) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		if program != nil {
+			program.Send(logLineMsg(scanner.Text()))
+		}
+	}
+}
+
 func installAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
 		var result tea.Msg
+		success := true
 
 		// Check install type
 		installType := "brew"
@@ -255,14 +265,16 @@ func installAppCmd(name string) tea.Cmd {
 			if program != nil {
 				program.Send(logLineMsg(fmt.Sprintf("Setting up %s...", name)))
 			}
-			result = installCompleteMsg{name: name, success: true}
 		} else {
 			cmd := exec.Command("/opt/homebrew/bin/brew", "install", name)
-			result = runCmdWithOutput(cmd, name, true)
+			r := runCmdWithOutput(cmd, name, true)
+			if msg, ok := r.(installCompleteMsg); ok {
+				success = msg.success
+			}
 		}
 
 		// Handle zsh integration if defined
-		if appConfig != nil {
+		if success && appConfig != nil {
 			if app, ok := appConfig.Apps[name]; ok && app.Zsh != "" {
 				if err := addZshIntegration(name, app.Zsh); err != nil {
 					if program != nil {
@@ -276,6 +288,29 @@ func installAppCmd(name string) tea.Cmd {
 			}
 		}
 
+		// Run post_install commands if defined
+		if success && appConfig != nil {
+			if app, ok := appConfig.Apps[name]; ok && len(app.PostInstall) > 0 {
+				for _, cmdStr := range app.PostInstall {
+					if program != nil {
+						program.Send(logLineMsg(fmt.Sprintf("Running: %s", cmdStr)))
+					}
+					cmd := exec.Command("zsh", "-c", cmdStr)
+					stdout, _ := cmd.StdoutPipe()
+					stderr, _ := cmd.StderrPipe()
+					cmd.Start()
+					go streamToLog(stdout)
+					go streamToLog(stderr)
+					if err := cmd.Wait(); err != nil {
+						if program != nil {
+							program.Send(logLineMsg(fmt.Sprintf("Warning: %s failed: %v", cmdStr, err)))
+						}
+					}
+				}
+			}
+		}
+
+		result = installCompleteMsg{name: name, success: success}
 		return result
 	}
 }
