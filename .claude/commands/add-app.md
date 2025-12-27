@@ -39,24 +39,29 @@ Keywords: `to`, `depends on`, `wip` (order flexible)
 
 6. **Generate description** - From `brew info` or infer from purpose
 
-7. **Show preview** - Display YAML block:
-   ```yaml
-   app-key:
-     install: type
-     category: cat
-     description: desc
+7. **Show preview** - Display what will be created:
    ```
-   Ask: "Add this to apps.yaml?"
+   apps/<category>/<name>/app.yaml:
+   install: type
+   description: desc
+   ```
+   If zsh content needed, also show:
+   ```
+   apps/<category>/<name>/init.zsh:
+   <zsh content>
+   ```
+   Ask: "Create this app?"
 
-8. **Apply** - Edit apps.yaml, insert in alphabetical order within category section
+8. **Apply** - Create folder and files:
+   - Create `apps/<category>/<name>/` directory
+   - Write `apps/<category>/<name>/app.yaml`
+   - If zsh content, write `apps/<category>/<name>/init.zsh`
 
 9. **Commit** (unless `wip`):
-   - First check `git diff apps.yaml` for ALL uncommitted app additions
-   - Parse diff to find all new app keys (lines starting with `+  <name>:`)
-   - Chain multiple apps in commit message: `feat(apps): add app1, app2 to <category>`
-   - If apps span multiple categories, group by category or use generic message
+   - Check `git status apps/` for new app additions
+   - Chain multiple apps: `feat(apps): add app1, app2 to <category>`
    ```bash
-   git add apps.yaml docs/skills/add-app/history.md
+   git add apps/ docs/skills/add-app/history.md
    git commit -m "feat(apps): add app1, app2 to cli"
    git push
    ```

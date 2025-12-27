@@ -2,26 +2,46 @@
 
 Reference docs for the `/add-app` skill. Skill reads all `.md` files in this directory.
 
-## apps.yaml Schema
+## Folder Structure
+
+Each app lives in `apps/<category>/<name>/`:
+
+```
+apps/
+  cli/
+    jq/
+      app.yaml
+    zoxide/
+      app.yaml
+      init.zsh
+  apps/
+    rectangle/
+      app.yaml
+```
+
+## app.yaml Schema
 
 ```yaml
-apps:
-  <app-key>:                    # lowercase, hyphenated (e.g., visual-studio-code)
-    install: brew|cask|npm|mas|shell
-    category: cli|apps
-    description: string         # short, no period
-    tier: required|auto         # optional, omit for auto
-    package: string             # optional, if pkg name differs from key
-    id: number                  # mas only, App Store ID
-    depends: [string]           # optional, list of app keys
-    config:                     # optional, dotfile symlink
-      source: string            # relative to repo
-      dest: string              # absolute path
-    zsh: |                      # optional, shell integration
-      eval "$(tool init zsh)"
-    post_install:               # optional, commands after install
-      - command1
-      - command2
+install: brew|cask|npm|mas|shell
+description: string         # short, no period
+tier: required|auto         # optional, omit for auto
+package: string             # optional, if pkg name differs from key
+id: number                  # mas only, App Store ID
+depends: [string]           # optional, list of app keys
+post_install:               # optional, commands after install
+  - command1
+  - command2
+```
+
+Note: `category` is inferred from folder path. `zsh` content goes in separate `init.zsh` file.
+
+## init.zsh
+
+Optional file for shell integration (aliases, eval commands). Sourced directly from repo.
+
+```zsh
+# apps/cli/zoxide/init.zsh
+eval "$(zoxide init zsh)"
 ```
 
 ## Install Types
@@ -77,59 +97,73 @@ npm search <name>
 ## Example Entries
 
 ### Basic brew tool
+```
+apps/cli/jq/app.yaml:
+```
 ```yaml
-jq:
-  install: brew
-  category: cli
-  description: JSON processor
+install: brew
+description: JSON processor
 ```
 
 ### Cask (GUI app)
+```
+apps/apps/visual-studio-code/app.yaml:
+```
 ```yaml
-visual-studio-code:
-  install: cask
-  category: apps
-  description: Code editor by Microsoft
+install: cask
+description: Code editor by Microsoft
 ```
 
 ### npm with package name
+```
+apps/cli/claude-code/app.yaml:
+```
 ```yaml
-claude-code:
-  install: npm
-  package: "@anthropic-ai/claude-code"
-  category: cli
-  description: Claude Code CLI
+install: npm
+package: "@anthropic-ai/claude-code"
+description: Claude Code CLI
 ```
 
 ### Tool with zsh integration
+```
+apps/cli/zoxide/app.yaml:
+```
 ```yaml
-zoxide:
-  install: brew
-  category: cli
-  description: Smarter cd command
-  zsh: |
-    eval "$(zoxide init zsh)"
+install: brew
+description: Smarter cd command
+```
+```
+apps/cli/zoxide/init.zsh:
+```
+```zsh
+eval "$(zoxide init zsh)"
 ```
 
 ### Tool with dependencies and post_install
+```
+apps/cli/fnm/app.yaml:
+```
 ```yaml
-fnm:
-  install: brew
-  category: cli
-  tier: required
-  description: Fast Node.js version manager
-  zsh: |
-    eval "$(fnm env --use-on-cd)"
-  post_install:
-    - fnm install 24
-    - fnm default 24
+install: brew
+tier: required
+description: Fast Node.js version manager
+post_install:
+  - fnm install 24
+  - fnm default 24
+```
+```
+apps/cli/fnm/init.zsh:
+```
+```zsh
+eval "$(fnm env --use-on-cd)"
 ```
 
 ### Mac App Store app
+```
+apps/apps/amphetamine/app.yaml:
+```
 ```yaml
-amphetamine:
-  install: mas
-  id: 937984704
-  category: apps
-  description: Keep Mac awake
+install: mas
+id: 937984704
+description: Keep Mac awake
 ```
