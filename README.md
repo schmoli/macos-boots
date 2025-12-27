@@ -5,6 +5,7 @@ TUI app for setting up a fresh macOS developer machine.
 ## Requirements
 
 - **macOS on Apple Silicon** (M1/M2/M3/M4)
+- **Administrator account** - Homebrew requires sudo access
 - **Xcode Command Line Tools** - must be installed manually before running
 
 ## What Gets Installed

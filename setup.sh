@@ -38,6 +38,8 @@ echo ""
 # Homebrew
 if [[ ! -x "/opt/homebrew/bin/brew" ]]; then
   echo "${BLUE}→${NC} Installing Homebrew..."
+  echo "    (requires admin password)"
+  sudo -v  # prompt for password and cache it
   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
