@@ -1,0 +1,2 @@
+install: brew
+description: Execute program periodically with fullscreen output

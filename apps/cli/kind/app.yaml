@@ -1,0 +1,4 @@
+install: brew
+description: Run local Kubernetes cluster in Docker
+depends:
+  - docker

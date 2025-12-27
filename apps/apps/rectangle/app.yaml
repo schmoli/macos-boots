@@ -1,0 +1,2 @@
+install: cask
+description: Move and resize windows using keyboard shortcuts or snap areas

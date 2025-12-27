@@ -1,0 +1,1 @@
+alias ya=yazi
