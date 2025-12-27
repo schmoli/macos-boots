@@ -75,8 +75,8 @@ const (
 type layoutMode int
 
 const (
-	layoutHorizontal layoutMode = iota // side-by-side
-	layoutVertical                     // top-bottom
+	layoutVertical   layoutMode = iota // top-bottom (default)
+	layoutHorizontal                   // side-by-side
 )
 
 type model struct {
@@ -519,11 +519,15 @@ func (m model) View() string {
 	} else {
 		content = m.viewMainContent()
 	}
-	mainPane = m.renderPane("", content, mainWidth, mainHeight)
+	paneFooter := ""
+	if m.progressMsg != "" {
+		paneFooter = progressStyle.Render(m.progressMsg)
+	}
+	mainPane = m.renderPane("", content, paneFooter, mainWidth, mainHeight)
 
 	// Render log pane
 	logContent := m.viewLog(logHeight)
-	logPane = m.renderPane("Log", logContent, logWidth, logHeight)
+	logPane = m.renderPane("Log", logContent, "", logWidth, logHeight)
 
 	// Combine panes based on layout
 	var combined string
@@ -537,7 +541,7 @@ func (m model) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, combined, footer)
 }
 
-func (m model) renderPane(title string, content string, width, height int) string {
+func (m model) renderPane(title string, content string, footer string, width, height int) string {
 	if width < 10 {
 		width = 10
 	}
@@ -551,6 +555,13 @@ func (m model) renderPane(title string, content string, width, height int) strin
 	if title != "" {
 		s = logTitleStyle.Render(title) + "\n"
 		contentHeight--
+	}
+
+	// Reserve space for footer if present
+	footerHeight := 0
+	if footer != "" {
+		footerHeight = 2 // blank line + footer
+		contentHeight -= footerHeight
 	}
 
 	// Pad/truncate content to fit
@@ -568,6 +579,11 @@ func (m model) renderPane(title string, content string, width, height int) strin
 		}
 	}
 	s += strings.Join(lines, "\n")
+
+	// Add footer at bottom
+	if footer != "" {
+		s += "\n\n" + footer
+	}
 
 	return paneStyle.Width(width).Height(height).Render(s)
 }
@@ -669,10 +685,6 @@ func (m model) viewCategoryContent() string {
 		} else {
 			s += appStyle.Render(line) + "\n"
 		}
-	}
-
-	if m.progressMsg != "" {
-		s += "\n" + progressStyle.Render(m.progressMsg)
 	}
 
 	return s
