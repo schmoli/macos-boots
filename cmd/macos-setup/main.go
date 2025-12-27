@@ -55,12 +55,31 @@ func runUpdate() error {
 		os.Setenv("PATH", brewPrefix+"/bin:"+brewPrefix+"/sbin:"+path)
 	}
 
-	fmt.Println("Updating macos-setup...")
+	fmt.Println("Checking for updates...")
+
+	// Fetch and compare commits
+	cmd := exec.Command("git", "fetch", "origin")
+	cmd.Dir = repoDir
+	cmd.Run()
+
+	localCmd := exec.Command("git", "rev-parse", "HEAD")
+	localCmd.Dir = repoDir
+	localHash, _ := localCmd.Output()
+
+	remoteCmd := exec.Command("git", "rev-parse", "origin/main")
+	remoteCmd.Dir = repoDir
+	remoteHash, _ := remoteCmd.Output()
+
+	if string(localHash) == string(remoteHash) {
+		fmt.Println("✓ Already up to date!")
+		return nil
+	}
+
 	fmt.Println()
 
 	// Git pull
 	fmt.Println("→ Pulling latest...")
-	cmd := exec.Command("git", "pull", "--rebase")
+	cmd = exec.Command("git", "pull", "--rebase")
 	cmd.Dir = repoDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
