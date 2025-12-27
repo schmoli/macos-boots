@@ -604,6 +604,21 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Enter):
 		m.inCategory = true
 		m.appCursor = 0
+	case key.Matches(msg, keys.Space):
+		// Toggle all apps in current category
+		cat := &m.categories[m.cursor]
+		allSelected := cat.selectedCount() == len(cat.apps)
+		for i := range cat.apps {
+			if allSelected {
+				cat.apps[i].selected = false
+				m.removeDeps(cat.apps[i].name)
+			} else {
+				if !cat.apps[i].selected {
+					cat.apps[i].selected = true
+					m.addDeps(cat.apps[i].name)
+				}
+			}
+		}
 	case key.Matches(msg, keys.Layout):
 		if m.layout == layoutHorizontal {
 			m.layout = layoutVertical
@@ -987,7 +1002,7 @@ func (m model) buildFooter() string {
 		}
 		parts = append(parts, "esc back")
 	} else {
-		parts = append(parts, "enter sel", "a all")
+		parts = append(parts, "space sel", "enter open", "a all")
 		totalToInstall := m.totalSelectedCount()
 		totalToReinstall := m.totalSelectedInstalledCount()
 		if totalToInstall > 0 {
