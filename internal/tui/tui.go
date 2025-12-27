@@ -258,44 +258,65 @@ func installAppCmd(name string) tea.Cmd {
 
 func addZshIntegration(name, zshContent string) error {
 	home, _ := os.UserHomeDir()
+	zshrcDir := filepath.Join(home, ".config", "macos-setup", "zshrc.d")
+
+	// Ensure zshrc.d directory exists
+	if err := os.MkdirAll(zshrcDir, 0755); err != nil {
+		return err
+	}
+
+	// Ensure init.zsh exists
+	initPath := filepath.Join(zshrcDir, "init.zsh")
+	if _, err := os.Stat(initPath); os.IsNotExist(err) {
+		initContent := `# macos-setup shell integration
+# Sources all app-specific configs in this directory
+for f in ~/.config/macos-setup/zshrc.d/*.zsh; do
+  [[ -f "$f" && "$f" != *"/init.zsh" ]] && source "$f"
+done
+`
+		if err := os.WriteFile(initPath, []byte(initContent), 0644); err != nil {
+			return err
+		}
+	}
+
+	// Ensure .zshrc sources our init.zsh
 	zshrcPath := filepath.Join(home, ".zshrc")
+	existing, _ := os.ReadFile(zshrcPath)
+	sourceLine := "source ~/.config/macos-setup/zshrc.d/init.zsh"
+	if !strings.Contains(string(existing), sourceLine) {
+		f, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		f.WriteString(fmt.Sprintf("\n# macos-setup\n%s\n", sourceLine))
+		f.Close()
 
-	// Check if already added
-	existing, err := os.ReadFile(zshrcPath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
+		// Mark zshrc as modified
+		markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
+		os.WriteFile(markerPath, []byte{}, 0644)
 	}
 
-	// Use a marker to check if already added
-	marker := fmt.Sprintf("# macos-setup: %s", name)
-	if strings.Contains(string(existing), marker) {
-		return nil // Already added
-	}
-
-	// Append to zshrc
-	f, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	content := fmt.Sprintf("\n%s\n%s\n", marker, strings.TrimSpace(zshContent))
-	if _, err := f.WriteString(content); err != nil {
-		return err
-	}
-
-	// Mark zshrc as modified
-	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
-	os.MkdirAll(filepath.Dir(markerPath), 0755)
-	os.WriteFile(markerPath, []byte{}, 0644)
-
-	return nil
+	// Write app-specific config
+	appConfigPath := filepath.Join(zshrcDir, name+".zsh")
+	return os.WriteFile(appConfigPath, []byte(strings.TrimSpace(zshContent)+"\n"), 0644)
 }
 
 func removeAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
 		cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", name)
-		return runCmdWithOutput(cmd, name, false)
+		result := runCmdWithOutput(cmd, name, false)
+
+		// Remove zsh integration if exists
+		home, _ := os.UserHomeDir()
+		appConfigPath := filepath.Join(home, ".config", "macos-setup", "zshrc.d", name+".zsh")
+		if _, err := os.Stat(appConfigPath); err == nil {
+			os.Remove(appConfigPath)
+			if program != nil {
+				program.Send(logLineMsg("Removed shell integration"))
+			}
+		}
+
+		return result
 	}
 }
 
@@ -325,49 +346,8 @@ func reinstallAppCmd(name string) tea.Cmd {
 }
 
 func updateZshIntegration(name, zshContent string) error {
-	home, _ := os.UserHomeDir()
-	zshrcPath := filepath.Join(home, ".zshrc")
-
-	existing, err := os.ReadFile(zshrcPath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	marker := fmt.Sprintf("# macos-setup: %s", name)
-	content := string(existing)
-
-	// Remove old block if exists
-	if strings.Contains(content, marker) {
-		lines := strings.Split(content, "\n")
-		var newLines []string
-		skip := false
-		for _, line := range lines {
-			if strings.Contains(line, marker) {
-				skip = true
-				continue
-			}
-			if skip && strings.HasPrefix(line, "#") {
-				skip = false
-			}
-			if skip && (strings.HasPrefix(line, "eval") || strings.HasPrefix(line, ".") || strings.HasPrefix(line, "source") || strings.TrimSpace(line) == "") {
-				continue
-			}
-			skip = false
-			newLines = append(newLines, line)
-		}
-		content = strings.Join(newLines, "\n")
-	}
-
-	// Append new block
-	newBlock := fmt.Sprintf("\n%s\n%s\n", marker, strings.TrimSpace(zshContent))
-	content = strings.TrimRight(content, "\n") + newBlock
-
-	// Mark zshrc as modified
-	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
-	os.MkdirAll(filepath.Dir(markerPath), 0755)
-	os.WriteFile(markerPath, []byte{}, 0644)
-
-	return os.WriteFile(zshrcPath, []byte(content), 0644)
+	// Just overwrite the app's config file
+	return addZshIntegration(name, zshContent)
 }
 
 func runCmdWithOutput(cmd *exec.Cmd, name string, isInstall bool) tea.Msg {
