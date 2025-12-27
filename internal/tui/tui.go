@@ -125,6 +125,7 @@ func buildCategories(cfg *config.Config) []category {
 	catNames := map[string]string{
 		"cli":  "CLI Tools",
 		"dev":  "Developer Tools",
+		"ai":   "AI Tools",
 		"apps": "Desktop Apps",
 		"mas":  "App Store",
 	}
@@ -161,6 +162,10 @@ func isInstalled(name string, installType string) bool {
 		return cmd.Run() == nil
 	case "cask":
 		cmd := exec.Command("/opt/homebrew/bin/brew", "list", "--cask", name)
+		return cmd.Run() == nil
+	case "npm":
+		// Check if command exists (npm packages install binaries)
+		cmd := exec.Command("which", name)
 		return cmd.Run() == nil
 	case "shell":
 		// Shell-only apps check if their config exists
@@ -252,21 +257,33 @@ func installAppCmd(name string) tea.Cmd {
 		var result tea.Msg
 		success := true
 
-		// Check install type
+		// Check install type and package name
 		installType := "brew"
+		pkgName := name
 		if appConfig != nil {
 			if app, ok := appConfig.Apps[name]; ok {
 				installType = app.Install
+				if app.Package != "" {
+					pkgName = app.Package
+				}
 			}
 		}
 
-		if installType == "shell" {
-			// Shell-only: just add integration, no brew install
+		switch installType {
+		case "shell":
+			// Shell-only: just add integration, no install
 			if program != nil {
 				program.Send(logLineMsg(fmt.Sprintf("Setting up %s...", name)))
 			}
-		} else {
-			cmd := exec.Command("/opt/homebrew/bin/brew", "install", name)
+		case "npm":
+			cmd := exec.Command("npm", "install", "-g", pkgName)
+			r := runCmdWithOutput(cmd, name, true)
+			if msg, ok := r.(installCompleteMsg); ok {
+				success = msg.success
+			}
+		default:
+			// brew, cask
+			cmd := exec.Command("/opt/homebrew/bin/brew", "install", pkgName)
 			r := runCmdWithOutput(cmd, name, true)
 			if msg, ok := r.(installCompleteMsg); ok {
 				success = msg.success
@@ -363,22 +380,30 @@ func removeAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
 		var result tea.Msg
 
-		// Check install type
+		// Check install type and package name
 		installType := "brew"
+		pkgName := name
 		if appConfig != nil {
 			if app, ok := appConfig.Apps[name]; ok {
 				installType = app.Install
+				if app.Package != "" {
+					pkgName = app.Package
+				}
 			}
 		}
 
-		if installType == "shell" {
+		switch installType {
+		case "shell":
 			// Shell-only: just remove config
 			if program != nil {
 				program.Send(logLineMsg(fmt.Sprintf("Removing %s config...", name)))
 			}
 			result = removeCompleteMsg{name: name, success: true}
-		} else {
-			cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", name)
+		case "npm":
+			cmd := exec.Command("npm", "uninstall", "-g", pkgName)
+			result = runCmdWithOutput(cmd, name, false)
+		default:
+			cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", pkgName)
 			result = runCmdWithOutput(cmd, name, false)
 		}
 
@@ -399,25 +424,42 @@ func removeAppCmd(name string) tea.Cmd {
 func reinstallAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
 		var result tea.Msg
+		success := true
 
-		// Check install type
+		// Check install type and package name
 		installType := "brew"
+		pkgName := name
 		if appConfig != nil {
 			if app, ok := appConfig.Apps[name]; ok {
 				installType = app.Install
+				if app.Package != "" {
+					pkgName = app.Package
+				}
 			}
 		}
 
-		if installType == "shell" {
+		switch installType {
+		case "shell":
 			// Shell-only: just update integration
 			if program != nil {
 				program.Send(logLineMsg(fmt.Sprintf("Updating %s config...", name)))
 			}
-			result = installCompleteMsg{name: name, success: true}
-		} else {
-			cmd := exec.Command("/opt/homebrew/bin/brew", "reinstall", name)
-			result = runCmdWithOutput(cmd, name, true)
+		case "npm":
+			// npm reinstall = uninstall + install
+			cmd := exec.Command("npm", "install", "-g", pkgName)
+			r := runCmdWithOutput(cmd, name, true)
+			if msg, ok := r.(installCompleteMsg); ok {
+				success = msg.success
+			}
+		default:
+			cmd := exec.Command("/opt/homebrew/bin/brew", "reinstall", pkgName)
+			r := runCmdWithOutput(cmd, name, true)
+			if msg, ok := r.(installCompleteMsg); ok {
+				success = msg.success
+			}
 		}
+
+		result = installCompleteMsg{name: name, success: success}
 
 		// Re-apply zsh integration if defined
 		if appConfig != nil {

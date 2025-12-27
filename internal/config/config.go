@@ -11,10 +11,11 @@ type Config struct {
 }
 
 type App struct {
-	Install     string     `yaml:"install"`      // brew, cask, mas, script
-	Category    string     `yaml:"category"`     // cli, apps, dev, etc.
+	Install     string     `yaml:"install"`      // brew, cask, mas, npm, shell
+	Category    string     `yaml:"category"`     // cli, apps, dev, ai, etc.
 	Tier        string     `yaml:"tier"`         // auto, interactive
 	Description string     `yaml:"description"`  // shown in TUI
+	Package     string     `yaml:"package"`      // package name if different from app name
 	ID          int        `yaml:"id"`           // App Store ID (mas only)
 	Config      *AppConfig `yaml:"config"`       // config files to symlink
 	Zsh         string     `yaml:"zsh"`          // zsh module to source

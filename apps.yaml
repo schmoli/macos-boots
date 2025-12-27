@@ -52,3 +52,14 @@ apps:
       - fnm install 24
       - fnm default 24
       - npm install -g npm@latest
+
+  claude:
+    install: npm
+    package: "@anthropic-ai/claude-code"
+    category: ai
+    tier: auto
+    description: Claude Code CLI
+    depends:
+      - fnm
+    zsh: |
+      alias claude-agent='claude --dangerously-skip-permissions'
