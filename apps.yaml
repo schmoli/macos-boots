@@ -167,6 +167,11 @@ apps:
     category: apps
     description: Open-source cross-platform alternative to AirDrop
 
+  rectangle:
+    install: cask
+    category: apps
+    description: Move and resize windows using keyboard shortcuts or snap areas
+
   twingate:
     install: cask
     category: apps
