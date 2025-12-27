@@ -1,0 +1,24 @@
+apps:
+  jq:
+    install: brew
+    category: cli
+    tier: auto
+    description: JSON processor
+
+  yq:
+    install: brew
+    category: cli
+    tier: auto
+    description: YAML processor
+
+  btop:
+    install: brew
+    category: cli
+    tier: auto
+    description: Resource monitor
+
+  bat:
+    install: brew
+    category: cli
+    tier: auto
+    description: Cat with syntax highlighting

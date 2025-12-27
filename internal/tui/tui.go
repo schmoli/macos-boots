@@ -2,10 +2,14 @@ package tui
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/schmoli/macos-setup/internal/config"
 )
 
 var (
@@ -28,30 +32,116 @@ var (
 	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241")).
 			MarginTop(1)
+
+	appStyle = lipgloss.NewStyle().
+			PaddingLeft(4)
+
+	appSelectedStyle = lipgloss.NewStyle().
+				PaddingLeft(4).
+				Foreground(lipgloss.Color("170")).
+				Bold(true)
 )
 
 type category struct {
-	name      string
-	installed int
-	total     int
+	name  string
+	key   string
+	apps  []appItem
+}
+
+type appItem struct {
+	name        string
+	description string
+	installed   bool
 }
 
 type model struct {
+	config     *config.Config
 	categories []category
 	cursor     int
+	inCategory bool
+	appCursor  int
 	quitting   bool
 }
 
 func initialModel() model {
-	return model{
-		categories: []category{
-			{name: "CLI Tools", installed: 0, total: 5},
-			{name: "Desktop Apps", installed: 0, total: 8},
-			{name: "App Store", installed: 0, total: 3},
-			{name: "Configs", installed: 0, total: 4},
-		},
-		cursor: 0,
+	home, _ := os.UserHomeDir()
+	configPath := filepath.Join(home, ".config", "macos-setup", "repo", "apps.yaml")
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		// Return empty model if config fails to load
+		return model{
+			categories: []category{
+				{name: "CLI Tools", key: "cli"},
+			},
+		}
 	}
+
+	// Build categories from config
+	cats := buildCategories(cfg)
+
+	return model{
+		config:     cfg,
+		categories: cats,
+		cursor:     0,
+	}
+}
+
+func buildCategories(cfg *config.Config) []category {
+	// Group apps by category
+	catMap := make(map[string][]appItem)
+	catNames := map[string]string{
+		"cli":  "CLI Tools",
+		"apps": "Desktop Apps",
+		"mas":  "App Store",
+	}
+
+	for name, app := range cfg.Apps {
+		installed := isInstalled(name, app.Install)
+		item := appItem{
+			name:        name,
+			description: app.Description,
+			installed:   installed,
+		}
+		catMap[app.Category] = append(catMap[app.Category], item)
+	}
+
+	// Build category list (only include non-empty categories)
+	var cats []category
+	for key, displayName := range catNames {
+		if apps, ok := catMap[key]; ok && len(apps) > 0 {
+			cats = append(cats, category{
+				name: displayName,
+				key:  key,
+				apps: apps,
+			})
+		}
+	}
+
+	return cats
+}
+
+func isInstalled(name string, installType string) bool {
+	switch installType {
+	case "brew":
+		cmd := exec.Command("/opt/homebrew/bin/brew", "list", name)
+		return cmd.Run() == nil
+	case "cask":
+		cmd := exec.Command("/opt/homebrew/bin/brew", "list", "--cask", name)
+		return cmd.Run() == nil
+	default:
+		return false
+	}
+}
+
+func (c *category) installedCount() int {
+	count := 0
+	for _, app := range c.apps {
+		if app.installed {
+			count++
+		}
+	}
+	return count
 }
 
 func (m model) Init() tea.Cmd {
@@ -61,25 +151,61 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, keys.Quit):
-			m.quitting = true
-			return m, tea.Quit
-		case key.Matches(msg, keys.Up):
-			if m.cursor > 0 {
-				m.cursor--
-			}
-		case key.Matches(msg, keys.Down):
-			if m.cursor < len(m.categories)-1 {
-				m.cursor++
-			}
-		case key.Matches(msg, keys.Enter):
-			// TODO: drill into category
-		case key.Matches(msg, keys.InstallAll):
-			// TODO: install all auto-tier apps
+		if m.inCategory {
+			return m.updateInCategory(msg)
+		}
+		return m.updateMain(msg)
+	}
+	return m, nil
+}
+
+func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, keys.Quit):
+		m.quitting = true
+		return m, tea.Quit
+	case key.Matches(msg, keys.Up):
+		if m.cursor > 0 {
+			m.cursor--
+		}
+	case key.Matches(msg, keys.Down):
+		if m.cursor < len(m.categories)-1 {
+			m.cursor++
+		}
+	case key.Matches(msg, keys.Enter):
+		m.inCategory = true
+		m.appCursor = 0
+	}
+	return m, nil
+}
+
+func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	cat := &m.categories[m.cursor]
+	switch {
+	case key.Matches(msg, keys.Quit), key.Matches(msg, keys.Back):
+		m.inCategory = false
+	case key.Matches(msg, keys.Up):
+		if m.appCursor > 0 {
+			m.appCursor--
+		}
+	case key.Matches(msg, keys.Down):
+		if m.appCursor < len(cat.apps)-1 {
+			m.appCursor++
+		}
+	case key.Matches(msg, keys.Enter), key.Matches(msg, keys.InstallAll):
+		// Install selected app
+		app := cat.apps[m.appCursor]
+		if !app.installed {
+			installApp(app.name)
+			cat.apps[m.appCursor].installed = true
 		}
 	}
 	return m, nil
+}
+
+func installApp(name string) {
+	cmd := exec.Command("/opt/homebrew/bin/brew", "install", "-q", name)
+	cmd.Run()
 }
 
 func (m model) View() string {
@@ -87,15 +213,26 @@ func (m model) View() string {
 		return ""
 	}
 
+	if m.inCategory {
+		return m.viewCategory()
+	}
+
+	return m.viewMain()
+}
+
+func (m model) viewMain() string {
 	s := titleStyle.Render("macos-setup") + "\n\n"
 
 	for i, cat := range m.categories {
-		status := fmt.Sprintf("[%d/%d]", cat.installed, cat.total)
+		installed := cat.installedCount()
+		total := len(cat.apps)
+		status := fmt.Sprintf("[%d/%d]", installed, total)
+
 		indicator := "○"
-		if cat.installed > 0 {
+		if installed > 0 {
 			indicator = "●"
 		}
-		if cat.installed == cat.total {
+		if installed == total && total > 0 {
 			indicator = "✓"
 		}
 
@@ -108,7 +245,31 @@ func (m model) View() string {
 		}
 	}
 
-	s += helpStyle.Render("\n↑/↓ navigate • enter select • i install all • q quit")
+	s += helpStyle.Render("\n↑/↓ navigate • enter select • q quit")
+
+	return s
+}
+
+func (m model) viewCategory() string {
+	cat := m.categories[m.cursor]
+	s := titleStyle.Render(cat.name) + "\n\n"
+
+	for i, app := range cat.apps {
+		indicator := "○"
+		if app.installed {
+			indicator = "✓"
+		}
+
+		line := fmt.Sprintf("%s %-15s %s", indicator, app.name, statusStyle.Render(app.description))
+
+		if i == m.appCursor {
+			s += appSelectedStyle.Render(line) + "\n"
+		} else {
+			s += appStyle.Render(line) + "\n"
+		}
+	}
+
+	s += helpStyle.Render("\n↑/↓ navigate • enter install • esc back • q quit")
 
 	return s
 }
@@ -117,6 +278,7 @@ type keyMap struct {
 	Up         key.Binding
 	Down       key.Binding
 	Enter      key.Binding
+	Back       key.Binding
 	InstallAll key.Binding
 	Quit       key.Binding
 }
@@ -130,6 +292,9 @@ var keys = keyMap{
 	),
 	Enter: key.NewBinding(
 		key.WithKeys("enter", "l"),
+	),
+	Back: key.NewBinding(
+		key.WithKeys("esc", "h"),
 	),
 	InstallAll: key.NewBinding(
 		key.WithKeys("i"),
