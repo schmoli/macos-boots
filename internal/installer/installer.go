@@ -310,11 +310,11 @@ func configureApp(name string, app config.App) {
 
 	// Run post_install commands
 	if len(app.PostInstall) > 0 {
-		// Source app's init.zsh if it exists
-		preamble := ""
+		// Build preamble: brew shellenv + app's init.zsh if exists
+		preamble := `eval "$(/opt/homebrew/bin/brew shellenv)" && `
 		initZsh := filepath.Join(home, ".config", "macos-setup", "repo", "apps", app.Category, name, "init.zsh")
 		if _, err := os.Stat(initZsh); err == nil {
-			preamble = fmt.Sprintf("source %s && ", initZsh)
+			preamble += fmt.Sprintf("source %s && ", initZsh)
 		}
 
 		for _, cmdStr := range app.PostInstall {
@@ -336,6 +336,9 @@ func EnsureShellIntegration() error {
 	// Write init.zsh that sources from repo
 	initPath := filepath.Join(baseDir, "init.zsh")
 	initContent := `# macos-setup shell integration (auto-generated)
+# Ensure compinit is loaded for completions
+autoload -Uz compinit && compinit -C
+
 for f in ~/.config/macos-setup/repo/apps/*/*/init.zsh(N); do
   source "$f"
 done
