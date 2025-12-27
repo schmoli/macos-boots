@@ -13,6 +13,35 @@ import (
 	"github.com/schmoli/macos-setup/internal/state"
 )
 
+// Styled output helpers
+var (
+	progressStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
+	successStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("82"))
+	failStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
+	warnStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
+	dimStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+)
+
+func LogProgress(msg string) {
+	fmt.Println(progressStyle.Render("⏳ " + msg))
+}
+
+func LogSuccess(msg string) {
+	fmt.Println(successStyle.Render("✅ " + msg))
+}
+
+func LogFail(msg string) {
+	fmt.Println(failStyle.Render("❌ " + msg))
+}
+
+func LogWarn(msg string) {
+	fmt.Println(warnStyle.Render("⚡ " + msg))
+}
+
+func LogDim(msg string) {
+	fmt.Println(dimStyle.Render("   " + msg))
+}
+
 // InstalledBrewPackages returns set of installed brew/cask packages
 func InstalledBrewPackages() map[string]bool {
 	installed := make(map[string]bool)
@@ -165,14 +194,14 @@ func installBrewApps(apps map[string]config.App, result *Result) error {
 	for name := range apps {
 		names = append(names, name)
 	}
-	fmt.Printf("Installing %d packages...\n", len(names))
+	LogProgress(fmt.Sprintf("Installing %d packages...", len(names)))
 
 	cmd := exec.Command("/opt/homebrew/bin/brew", "bundle", "--file="+brewfile)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		// Some may have failed, but continue
-		fmt.Printf("Warning: brew bundle had errors\n")
+		LogWarn("brew bundle had errors")
 	}
 
 	// Check what actually got installed
@@ -199,7 +228,7 @@ func installNpmApp(name string, app config.App, result *Result) error {
 		pkg = app.Package
 	}
 
-	fmt.Printf("Installing %s...\n", name)
+	LogProgress(fmt.Sprintf("Installing %s...", name))
 	cmd := exec.Command("npm", "install", "-g", pkg)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -213,7 +242,7 @@ func installNpmApp(name string, app config.App, result *Result) error {
 }
 
 func installMasApp(name string, app config.App, result *Result) error {
-	fmt.Printf("Installing %s from App Store...\n", name)
+	LogProgress(fmt.Sprintf("Installing %s from App Store...", name))
 	cmd := exec.Command("mas", "install", fmt.Sprintf("%d", app.ID))
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -247,11 +276,10 @@ func configureApp(name string, app config.App) {
 
 	// Add zsh integration if defined
 	if app.Zsh != "" {
-		fmt.Printf("Configuring %s...", name)
 		if err := addZshIntegration(name, app.Zsh); err != nil {
-			fmt.Printf(" failed: %v\n", err)
+			LogFail(fmt.Sprintf("Configuring %s: %v", name, err))
 		} else {
-			fmt.Printf(" done\n")
+			LogSuccess(fmt.Sprintf("Configured %s", name))
 		}
 	}
 
@@ -264,7 +292,7 @@ func configureApp(name string, app config.App) {
 		}
 
 		for _, cmdStr := range app.PostInstall {
-			fmt.Printf("  → %s\n", cmdStr)
+			LogDim(cmdStr)
 			fullCmd := preamble + cmdStr
 			cmd := exec.Command("zsh", "-c", fullCmd)
 			cmd.Stdout = os.Stdout
@@ -351,7 +379,7 @@ func AutoPull() bool {
 	}
 
 	// Pull
-	fmt.Println("Pulling updates...")
+	LogProgress("Pulling updates...")
 	cmd = exec.Command("git", "pull", "--rebase")
 	cmd.Dir = repoDir
 	cmd.Stdout = os.Stdout
@@ -369,7 +397,7 @@ func Upgrade(cfg *config.Config) error {
 	}
 
 	if len(s.Installed) == 0 {
-		fmt.Println("No tracked apps to upgrade.")
+		LogDim("No tracked apps to upgrade")
 		return nil
 	}
 
@@ -398,7 +426,7 @@ func Upgrade(cfg *config.Config) error {
 
 	// Upgrade brew packages
 	if len(brewPkgs) > 0 {
-		fmt.Printf("Upgrading %d brew packages...\n", len(brewPkgs))
+		LogProgress(fmt.Sprintf("Upgrading %d brew packages...", len(brewPkgs)))
 		args := append([]string{"upgrade"}, brewPkgs...)
 		cmd := exec.Command("/opt/homebrew/bin/brew", args...)
 		cmd.Stdout = os.Stdout
@@ -408,7 +436,7 @@ func Upgrade(cfg *config.Config) error {
 
 	// Upgrade npm packages
 	if len(npmPkgs) > 0 {
-		fmt.Printf("Upgrading %d npm packages...\n", len(npmPkgs))
+		LogProgress(fmt.Sprintf("Upgrading %d npm packages...", len(npmPkgs)))
 		for _, pkg := range npmPkgs {
 			cmd := exec.Command("npm", "update", "-g", pkg)
 			cmd.Stdout = os.Stdout
@@ -417,7 +445,7 @@ func Upgrade(cfg *config.Config) error {
 		}
 	}
 
-	fmt.Println("✓ Upgrade complete")
+	LogSuccess("Upgrade complete")
 	return nil
 }
 
@@ -508,7 +536,7 @@ func Status(cfg *config.Config) {
 	}
 
 	if len(sections) == 0 {
-		fmt.Println("No apps installed.")
+		LogDim("No apps installed")
 		return
 	}
 

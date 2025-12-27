@@ -62,7 +62,7 @@ func main() {
 	// Check if zshrc was modified
 	if installer.CheckZshrcModified() {
 		fmt.Println()
-		fmt.Println("⚠  Run: source ~/.zshrc")
+		installer.LogWarn("Run: source ~/.zshrc")
 	}
 }
 
@@ -91,13 +91,13 @@ func runInstall(cfg *config.Config, category string) error {
 	// Print summary
 	fmt.Println()
 	if len(result.Installed) > 0 {
-		fmt.Printf("✓ Installed: %v\n", result.Installed)
+		installer.LogSuccess(fmt.Sprintf("Installed: %v", result.Installed))
 	}
 	if len(result.Skipped) > 0 {
-		fmt.Printf("Skipped (already installed): %v\n", result.Skipped)
+		installer.LogDim(fmt.Sprintf("Skipped: %v", result.Skipped))
 	}
 	if len(result.Failed) > 0 {
-		fmt.Printf("✗ Failed: %v\n", result.Failed)
+		installer.LogFail(fmt.Sprintf("Failed: %v", result.Failed))
 	}
 
 	return nil
