@@ -22,3 +22,6 @@ dist/
 
 # State (generated at runtime)
 state.json
+
+# Worktrees
+.worktrees/
