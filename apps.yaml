@@ -61,6 +61,12 @@ apps:
     zsh: |
       eval "$(zoxide init zsh)"
 
+  gh:
+    install: brew
+    category: cli
+    tier: auto
+    description: GitHub command-line tool
+
   glow:
     install: brew
     category: cli
