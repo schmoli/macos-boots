@@ -93,9 +93,6 @@ func runInstall(cfg *config.Config, category string) error {
 	if len(result.Installed) > 0 {
 		installer.LogSuccess(fmt.Sprintf("Installed: %v", result.Installed))
 	}
-	if len(result.Skipped) > 0 {
-		installer.LogDim(fmt.Sprintf("Skipped: %v", result.Skipped))
-	}
 	if len(result.Failed) > 0 {
 		installer.LogFail(fmt.Sprintf("Failed: %v", result.Failed))
 	}
