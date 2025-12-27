@@ -89,6 +89,11 @@ apps:
     tier: auto
     description: GitHub command-line tool
 
+  helm:
+    install: brew
+    category: cli
+    description: Kubernetes package manager
+
   gitui:
     install: brew
     category: cli
