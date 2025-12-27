@@ -113,6 +113,11 @@ apps:
     tier: auto
     description: Fast Python package manager
 
+  watch:
+    install: brew
+    category: cli
+    description: Execute program periodically with fullscreen output
+
   fnm:
     install: brew
     category: cli
