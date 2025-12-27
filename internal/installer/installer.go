@@ -400,12 +400,12 @@ func AutoPull() bool {
 
 	// Display changelog
 	commits := strings.Split(strings.TrimSpace(string(logOutput)), "\n")
+	LogSuccess(fmt.Sprintf("Updated (%d commits)", len(commits)))
 	for _, msg := range commits {
 		if msg != "" {
 			fmt.Println(warnStyle.Render("   • " + msg))
 		}
 	}
-	LogSuccess(fmt.Sprintf("Updated (%d commits)", len(commits)))
 
 	// Check if Go files changed
 	diffCmd := exec.Command("git", "diff", "--name-only", oldHead, "HEAD")
