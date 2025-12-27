@@ -11,6 +11,7 @@ BINARY_DIR="$HOME/.local/bin"
 
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
+DIM='\033[0;90m'
 NC='\033[0m'
 
 # Require Apple Silicon
@@ -113,6 +114,8 @@ fi
 
 echo ""
 echo "${GREEN}✅ Installation complete!${NC}"
+INSTALLED_VERSION=$(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+echo "${DIM}Installed version: ${INSTALLED_VERSION}${NC}"
 echo ""
 echo "Next steps:"
 echo ""
