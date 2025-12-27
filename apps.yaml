@@ -5,6 +5,13 @@ apps:
     tier: auto
     description: JSON processor
 
+  kind:
+    install: brew
+    category: cli
+    description: Run local Kubernetes cluster in Docker
+    depends:
+      - docker
+
   yq:
     install: brew
     category: cli
