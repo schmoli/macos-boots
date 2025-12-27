@@ -616,10 +616,6 @@ func (m model) buildFooter() string {
 	parts = append(parts, fmt.Sprintf("tab layout(%s)", layoutName))
 	parts = append(parts, "q quit")
 
-	if m.progressMsg != "" {
-		parts = append(parts, progressStyle.Render(m.progressMsg))
-	}
-
 	return footerStyle.Render(strings.Join(parts, " • "))
 }
 
@@ -673,6 +669,10 @@ func (m model) viewCategoryContent() string {
 		} else {
 			s += appStyle.Render(line) + "\n"
 		}
+	}
+
+	if m.progressMsg != "" {
+		s += "\n" + progressStyle.Render(m.progressMsg)
 	}
 
 	return s
