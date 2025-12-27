@@ -61,6 +61,12 @@ apps:
     tier: auto
     description: Markdown viewer
 
+  yazi:
+    install: brew
+    category: cli
+    tier: auto
+    description: Terminal file manager
+
   fnm:
     install: brew
     category: dev
