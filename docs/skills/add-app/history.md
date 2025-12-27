@@ -20,3 +20,4 @@ Log of apps added via `/add-app` skill.
 2025-12-27 | sf-symbols | apps | Apple symbol library tool
 2025-12-27 | daisydisk | apps |
 2025-12-27 | cleanshot | apps |
+2025-12-27 | font-jetbrains-mono-nerd-font | cli | dev font with icons
