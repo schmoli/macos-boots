@@ -123,6 +123,7 @@ func buildCategories(cfg *config.Config) []category {
 	catMap := make(map[string][]appItem)
 	catNames := map[string]string{
 		"cli":  "CLI Tools",
+		"dev":  "Developer Tools",
 		"apps": "Desktop Apps",
 		"mas":  "App Store",
 	}
@@ -208,12 +209,66 @@ type removeCompleteMsg struct {
 type logLineMsg string
 
 var program *tea.Program
+var appConfig *config.Config
 
 func installAppCmd(name string) tea.Cmd {
 	return func() tea.Msg {
 		cmd := exec.Command("/opt/homebrew/bin/brew", "install", name)
-		return runCmdWithOutput(cmd, name, true)
+		result := runCmdWithOutput(cmd, name, true)
+
+		// Handle zsh integration if defined
+		if appConfig != nil {
+			if app, ok := appConfig.Apps[name]; ok && app.Zsh != "" {
+				if err := addZshIntegration(name, app.Zsh); err != nil {
+					if program != nil {
+						program.Send(logLineMsg(fmt.Sprintf("Warning: zsh setup failed: %v", err)))
+					}
+				} else {
+					if program != nil {
+						program.Send(logLineMsg("Added shell integration to ~/.zshrc"))
+					}
+				}
+			}
+		}
+
+		return result
 	}
+}
+
+func addZshIntegration(name, zshContent string) error {
+	home, _ := os.UserHomeDir()
+	zshrcPath := filepath.Join(home, ".zshrc")
+
+	// Check if already added
+	existing, err := os.ReadFile(zshrcPath)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	// Use a marker to check if already added
+	marker := fmt.Sprintf("# macos-setup: %s", name)
+	if strings.Contains(string(existing), marker) {
+		return nil // Already added
+	}
+
+	// Append to zshrc
+	f, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	content := fmt.Sprintf("\n%s\n%s\n", marker, strings.TrimSpace(zshContent))
+	if _, err := f.WriteString(content); err != nil {
+		return err
+	}
+
+	// Mark zshrc as modified
+	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
+	os.MkdirAll(filepath.Dir(markerPath), 0755)
+	os.WriteFile(markerPath, []byte{}, 0644)
+
+	return nil
 }
 
 func removeAppCmd(name string) tea.Cmd {
@@ -737,7 +792,9 @@ var keys = keyMap{
 }
 
 func Run() error {
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	m := initialModel()
+	appConfig = m.config
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	program = p
 	_, err := p.Run()
 

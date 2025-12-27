@@ -22,3 +22,12 @@ apps:
     category: cli
     tier: auto
     description: Cat with syntax highlighting
+
+  asdf:
+    install: brew
+    category: dev
+    tier: auto
+    description: Version manager (node, python, etc)
+    zsh: |
+      # asdf version manager
+      . /opt/homebrew/opt/asdf/libexec/asdf.sh
