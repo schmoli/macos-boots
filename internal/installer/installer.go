@@ -324,3 +324,97 @@ func CheckZshrcModified() bool {
 	}
 	return false
 }
+
+// AutoPull fetches and pulls from origin if behind, returns true if pulled
+func AutoPull() bool {
+	home, _ := os.UserHomeDir()
+	repoDir := filepath.Join(home, ".config", "macos-setup", "repo")
+
+	// Fetch
+	cmd := exec.Command("git", "fetch", "origin")
+	cmd.Dir = repoDir
+	cmd.Run()
+
+	// Compare
+	localCmd := exec.Command("git", "rev-parse", "HEAD")
+	localCmd.Dir = repoDir
+	localHash, _ := localCmd.Output()
+
+	remoteCmd := exec.Command("git", "rev-parse", "origin/main")
+	remoteCmd.Dir = repoDir
+	remoteHash, _ := remoteCmd.Output()
+
+	if string(localHash) == string(remoteHash) {
+		return false
+	}
+
+	// Pull
+	fmt.Println("Pulling updates...")
+	cmd = exec.Command("git", "pull", "--rebase")
+	cmd.Dir = repoDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+
+	return true
+}
+
+// Upgrade upgrades all tracked apps
+func Upgrade(cfg *config.Config) error {
+	s, err := state.Load()
+	if err != nil {
+		return err
+	}
+
+	if len(s.Installed) == 0 {
+		fmt.Println("No tracked apps to upgrade.")
+		return nil
+	}
+
+	// Collect tracked brew/cask apps
+	var brewPkgs []string
+	var npmPkgs []string
+
+	for name := range s.Installed {
+		app, ok := cfg.Apps[name]
+		if !ok {
+			continue
+		}
+
+		pkg := name
+		if app.Package != "" {
+			pkg = app.Package
+		}
+
+		switch app.Install {
+		case "brew", "cask":
+			brewPkgs = append(brewPkgs, pkg)
+		case "npm":
+			npmPkgs = append(npmPkgs, pkg)
+		}
+	}
+
+	// Upgrade brew packages
+	if len(brewPkgs) > 0 {
+		fmt.Printf("Upgrading %d brew packages...\n", len(brewPkgs))
+		args := append([]string{"upgrade"}, brewPkgs...)
+		cmd := exec.Command("/opt/homebrew/bin/brew", args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Run()
+	}
+
+	// Upgrade npm packages
+	if len(npmPkgs) > 0 {
+		fmt.Printf("Upgrading %d npm packages...\n", len(npmPkgs))
+		for _, pkg := range npmPkgs {
+			cmd := exec.Command("npm", "update", "-g", pkg)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			cmd.Run()
+		}
+	}
+
+	fmt.Println("✓ Upgrade complete")
+	return nil
+}
