@@ -507,6 +507,46 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else {
 			m.layout = layoutHorizontal
 		}
+	case key.Matches(msg, keys.SelectAll):
+		// Select all apps in all categories
+		for catIdx := range m.categories {
+			for appIdx := range m.categories[catIdx].apps {
+				if !m.categories[catIdx].apps[appIdx].selected {
+					m.categories[catIdx].apps[appIdx].selected = true
+					m.addDeps(m.categories[catIdx].apps[appIdx].name)
+				}
+			}
+		}
+	case key.Matches(msg, keys.Install):
+		// Install all selected apps across all categories
+		var toInstall []string
+		seen := make(map[string]bool)
+
+		// Add dependencies first
+		for dep := range m.requiredDeps {
+			if !seen[dep] && !isInstalled(dep, "brew") {
+				toInstall = append(toInstall, dep)
+				seen[dep] = true
+			}
+		}
+
+		// Add selected apps from all categories
+		for catIdx := range m.categories {
+			for _, app := range m.categories[catIdx].apps {
+				if app.selected && !app.installed && !seen[app.name] {
+					toInstall = append(toInstall, app.name)
+					seen[app.name] = true
+				}
+			}
+		}
+
+		if len(toInstall) > 0 {
+			m.state = stateInstalling
+			m.progressApps = toInstall
+			m.progressIdx = 0
+			m.progressMsg = fmt.Sprintf("Installing %s... (1/%d)", toInstall[0], len(toInstall))
+			return m, installAppCmd(toInstall[0])
+		}
 	}
 	return m, nil
 }
@@ -777,7 +817,11 @@ func (m model) buildFooter() string {
 		}
 		parts = append(parts, "esc back")
 	} else {
-		parts = append(parts, "enter sel")
+		parts = append(parts, "enter sel", "a all")
+		totalSelected := m.totalSelectedCount()
+		if totalSelected > 0 {
+			parts = append(parts, fmt.Sprintf("i inst(%d)", totalSelected))
+		}
 	}
 
 	layoutName := "horiz"
@@ -788,6 +832,14 @@ func (m model) buildFooter() string {
 	parts = append(parts, "q quit")
 
 	return footerStyle.Render(strings.Join(parts, " • "))
+}
+
+func (m model) totalSelectedCount() int {
+	count := 0
+	for _, cat := range m.categories {
+		count += cat.selectedCount()
+	}
+	return count
 }
 
 func (m model) viewMainContent() string {
