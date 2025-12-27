@@ -187,6 +187,26 @@ func (c *category) selectedCount() int {
 	return count
 }
 
+func (c *category) selectedUninstalledCount() int {
+	count := 0
+	for _, app := range c.apps {
+		if app.selected && !app.installed {
+			count++
+		}
+	}
+	return count
+}
+
+func (c *category) selectedInstalledCount() int {
+	count := 0
+	for _, app := range c.apps {
+		if app.selected && app.installed {
+			count++
+		}
+	}
+	return count
+}
+
 func (c *category) getSelectedNames() []string {
 	var names []string
 	for _, app := range c.apps {
@@ -277,6 +297,77 @@ func removeAppCmd(name string) tea.Cmd {
 		cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", name)
 		return runCmdWithOutput(cmd, name, false)
 	}
+}
+
+func reinstallAppCmd(name string) tea.Cmd {
+	return func() tea.Msg {
+		cmd := exec.Command("/opt/homebrew/bin/brew", "reinstall", name)
+		result := runCmdWithOutput(cmd, name, true)
+
+		// Re-apply zsh integration if defined
+		if appConfig != nil {
+			if app, ok := appConfig.Apps[name]; ok && app.Zsh != "" {
+				// Remove old marker and re-add
+				if err := updateZshIntegration(name, app.Zsh); err != nil {
+					if program != nil {
+						program.Send(logLineMsg(fmt.Sprintf("Warning: zsh setup failed: %v", err)))
+					}
+				} else {
+					if program != nil {
+						program.Send(logLineMsg("Updated shell integration in ~/.zshrc"))
+					}
+				}
+			}
+		}
+
+		return result
+	}
+}
+
+func updateZshIntegration(name, zshContent string) error {
+	home, _ := os.UserHomeDir()
+	zshrcPath := filepath.Join(home, ".zshrc")
+
+	existing, err := os.ReadFile(zshrcPath)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	marker := fmt.Sprintf("# macos-setup: %s", name)
+	content := string(existing)
+
+	// Remove old block if exists
+	if strings.Contains(content, marker) {
+		lines := strings.Split(content, "\n")
+		var newLines []string
+		skip := false
+		for _, line := range lines {
+			if strings.Contains(line, marker) {
+				skip = true
+				continue
+			}
+			if skip && strings.HasPrefix(line, "#") {
+				skip = false
+			}
+			if skip && (strings.HasPrefix(line, "eval") || strings.HasPrefix(line, ".") || strings.HasPrefix(line, "source") || strings.TrimSpace(line) == "") {
+				continue
+			}
+			skip = false
+			newLines = append(newLines, line)
+		}
+		content = strings.Join(newLines, "\n")
+	}
+
+	// Append new block
+	newBlock := fmt.Sprintf("\n%s\n%s\n", marker, strings.TrimSpace(zshContent))
+	content = strings.TrimRight(content, "\n") + newBlock
+
+	// Mark zshrc as modified
+	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
+	os.MkdirAll(filepath.Dir(markerPath), 0755)
+	os.WriteFile(markerPath, []byte{}, 0644)
+
+	return os.WriteFile(zshrcPath, []byte(content), 0644)
 }
 
 func runCmdWithOutput(cmd *exec.Cmd, name string, isInstall bool) tea.Msg {
@@ -580,6 +671,27 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.progressMsg = fmt.Sprintf("Removing %s... (1/%d)", toRemove[0], len(toRemove))
 			return m, removeAppCmd(toRemove[0])
 		}
+	case key.Matches(msg, keys.InstallForce):
+		// Reinstall all selected installed apps across all categories
+		var toReinstall []string
+		seen := make(map[string]bool)
+
+		for catIdx := range m.categories {
+			for _, app := range m.categories[catIdx].apps {
+				if app.selected && app.installed && !seen[app.name] {
+					toReinstall = append(toReinstall, app.name)
+					seen[app.name] = true
+				}
+			}
+		}
+
+		if len(toReinstall) > 0 {
+			m.state = stateInstalling
+			m.progressApps = toReinstall
+			m.progressIdx = 0
+			m.progressMsg = fmt.Sprintf("Reinstalling %s... (1/%d)", toReinstall[0], len(toReinstall))
+			return m, reinstallAppCmd(toReinstall[0])
+		}
 	}
 	return m, nil
 }
@@ -676,6 +788,26 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.progressIdx = 0
 				m.progressMsg = fmt.Sprintf("Removing %s... (1/%d)", toRemove[0], len(toRemove))
 				return m, removeAppCmd(toRemove[0])
+			}
+		}
+	case key.Matches(msg, keys.InstallForce):
+		selected := cat.getSelectedNames()
+		if len(selected) > 0 {
+			var toReinstall []string
+			for _, name := range selected {
+				for _, app := range cat.apps {
+					if app.name == name && app.installed {
+						toReinstall = append(toReinstall, name)
+						break
+					}
+				}
+			}
+			if len(toReinstall) > 0 {
+				m.state = stateInstalling
+				m.progressApps = toReinstall
+				m.progressIdx = 0
+				m.progressMsg = fmt.Sprintf("Reinstalling %s... (1/%d)", toReinstall[0], len(toReinstall))
+				return m, reinstallAppCmd(toReinstall[0])
 			}
 		}
 	case key.Matches(msg, keys.Layout):
@@ -844,20 +976,26 @@ func (m model) buildFooter() string {
 	if m.inCategory {
 		parts = append(parts, "space sel", "a all")
 		cat := m.categories[m.cursor]
-		if cat.selectedCount() > 0 {
-			parts = append(parts, fmt.Sprintf("i inst(%d)", cat.selectedCount()))
-			parts = append(parts, fmt.Sprintf("r rem(%d)", cat.selectedCount()))
+		toInstall := cat.selectedUninstalledCount()
+		toReinstall := cat.selectedInstalledCount()
+		if toInstall > 0 {
+			parts = append(parts, fmt.Sprintf("i inst(%d)", toInstall))
+		}
+		if toReinstall > 0 {
+			parts = append(parts, fmt.Sprintf("I reinstall(%d)", toReinstall))
+			parts = append(parts, fmt.Sprintf("r rem(%d)", toReinstall))
 		}
 		parts = append(parts, "esc back")
 	} else {
 		parts = append(parts, "enter sel", "a all")
 		totalToInstall := m.totalSelectedCount()
-		totalToRemove := m.totalSelectedInstalledCount()
+		totalToReinstall := m.totalSelectedInstalledCount()
 		if totalToInstall > 0 {
 			parts = append(parts, fmt.Sprintf("i inst(%d)", totalToInstall))
 		}
-		if totalToRemove > 0 {
-			parts = append(parts, fmt.Sprintf("r rem(%d)", totalToRemove))
+		if totalToReinstall > 0 {
+			parts = append(parts, fmt.Sprintf("I reinstall(%d)", totalToReinstall))
+			parts = append(parts, fmt.Sprintf("r rem(%d)", totalToReinstall))
 		}
 	}
 
@@ -1008,16 +1146,17 @@ func (m model) viewCategoryContent() string {
 }
 
 type keyMap struct {
-	Up        key.Binding
-	Down      key.Binding
-	Enter     key.Binding
-	Back      key.Binding
-	Space     key.Binding
-	SelectAll key.Binding
-	Install   key.Binding
-	Remove    key.Binding
-	Layout    key.Binding
-	Quit      key.Binding
+	Up           key.Binding
+	Down         key.Binding
+	Enter        key.Binding
+	Back         key.Binding
+	Space        key.Binding
+	SelectAll    key.Binding
+	Install      key.Binding
+	InstallForce key.Binding
+	Remove       key.Binding
+	Layout       key.Binding
+	Quit         key.Binding
 }
 
 var keys = keyMap{
@@ -1041,6 +1180,9 @@ var keys = keyMap{
 	),
 	Install: key.NewBinding(
 		key.WithKeys("i"),
+	),
+	InstallForce: key.NewBinding(
+		key.WithKeys("I"),
 	),
 	Remove: key.NewBinding(
 		key.WithKeys("r"),
