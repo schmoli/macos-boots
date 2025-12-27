@@ -38,7 +38,7 @@ echo ""
 # Homebrew
 if [[ ! -x "/opt/homebrew/bin/brew" ]]; then
   echo "${BLUE}→${NC} Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
