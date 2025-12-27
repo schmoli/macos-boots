@@ -11,3 +11,4 @@ Log of apps added via `/add-app` skill.
 2025-12-26 | gitui | cli | terminal UI for git
 2025-12-26 | kind | cli | local k8s in Docker
 2025-12-26 | watch | cli | periodic program execution
+2025-12-26 | tmux | cli | terminal multiplexer

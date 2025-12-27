@@ -107,6 +107,11 @@ apps:
     tier: auto
     description: Terminal file manager
 
+  tmux:
+    install: brew
+    category: cli
+    description: Terminal multiplexer
+
   uv:
     install: brew
     category: cli
