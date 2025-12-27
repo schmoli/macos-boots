@@ -1341,14 +1341,16 @@ func Run() error {
 	m := initialModel()
 	appConfig = m.config
 
-	// Bootstrap macos-setup's own shell config on first run
-	if appConfig != nil {
-		if app, ok := appConfig.Apps["macos-setup"]; ok && app.Zsh != "" {
-			home, _ := os.UserHomeDir()
-			appDir := filepath.Join(home, ".config", "macos-setup", "apps", "macos-setup")
-			if _, err := os.Stat(appDir); os.IsNotExist(err) {
-				addZshIntegration("macos-setup", app.Zsh)
-			}
+	// Bootstrap core shell aliases on first run
+	home, _ := os.UserHomeDir()
+	coreApps := map[string]string{
+		"macos-setup": "alias macos=macos-setup\nalias refreshenv='source ~/.zshrc'",
+		"brew":        "alias brewup='brew update && brew upgrade'",
+	}
+	for name, zsh := range coreApps {
+		appDir := filepath.Join(home, ".config", "macos-setup", "apps", name)
+		if _, err := os.Stat(appDir); os.IsNotExist(err) {
+			addZshIntegration(name, zsh)
 		}
 	}
 
@@ -1357,7 +1359,6 @@ func Run() error {
 	_, err := p.Run()
 
 	// Check if .zshrc was modified and notify user
-	home, _ := os.UserHomeDir()
 	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
 	if _, statErr := os.Stat(markerPath); statErr == nil {
 		fmt.Println()
