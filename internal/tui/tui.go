@@ -132,6 +132,7 @@ func buildCategories(cfg *config.Config) []category {
 		{"ai", "AI Tools"},
 		{"apps", "Desktop Apps"},
 		{"mas", "App Store"},
+		{"utils", "Utilities"},
 	}
 
 	for name, app := range cfg.Apps {
@@ -177,6 +178,14 @@ func isInstalledWithPkg(name, installType, pkgName string) bool {
 	case "npm":
 		cmd := exec.Command("npm", "list", "-g", pkgName)
 		return cmd.Run() == nil
+	case "mas":
+		// Check if app is installed via mas list
+		cmd := exec.Command("mas", "list")
+		output, err := cmd.Output()
+		if err != nil {
+			return false
+		}
+		return strings.Contains(string(output), pkgName)
 	case "shell":
 		// Shell-only apps check if their config exists
 		home, _ := os.UserHomeDir()
@@ -297,6 +306,19 @@ func installAppCmd(name string) tea.Cmd {
 			}
 		case "npm":
 			cmd := exec.Command("npm", "install", "-g", pkgName)
+			r := runCmdWithOutput(cmd, name, true)
+			if msg, ok := r.(installCompleteMsg); ok {
+				success = msg.success
+			}
+		case "mas":
+			// Get app ID from config
+			appID := ""
+			if appConfig != nil {
+				if app, ok := appConfig.Apps[name]; ok {
+					appID = fmt.Sprintf("%d", app.ID)
+				}
+			}
+			cmd := exec.Command("mas", "install", appID)
 			r := runCmdWithOutput(cmd, name, true)
 			if msg, ok := r.(installCompleteMsg); ok {
 				success = msg.success
@@ -430,6 +452,16 @@ func removeAppCmd(name string) tea.Cmd {
 			result = removeCompleteMsg{name: name, success: true}
 		case "npm":
 			cmd := exec.Command("npm", "uninstall", "-g", pkgName)
+			result = runCmdWithOutput(cmd, name, false)
+		case "mas":
+			// Get app ID from config
+			appID := ""
+			if appConfig != nil {
+				if app, ok := appConfig.Apps[name]; ok {
+					appID = fmt.Sprintf("%d", app.ID)
+				}
+			}
+			cmd := exec.Command("mas", "uninstall", appID)
 			result = runCmdWithOutput(cmd, name, false)
 		default:
 			cmd := exec.Command("/opt/homebrew/bin/brew", "uninstall", pkgName)

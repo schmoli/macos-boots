@@ -35,6 +35,12 @@ apps:
       - fnm install 24
       - fnm default 24
 
+  mas:
+    install: brew
+    category: utils
+    tier: required
+    description: Mac App Store CLI
+
   claude-code:
     install: npm
     package: "@anthropic-ai/claude-code"
@@ -49,3 +55,10 @@ apps:
     category: ai
     tier: auto
     description: Claude macOS app
+
+  amphetamine:
+    install: mas
+    id: 937984704
+    category: utils
+    tier: auto
+    description: Keep Mac awake
