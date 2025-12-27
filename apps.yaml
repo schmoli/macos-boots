@@ -26,7 +26,7 @@ apps:
   fnm:
     install: brew
     category: dev
-    tier: auto
+    tier: required
     description: Fast Node.js version manager
     zsh: |
       # fnm - fast node manager
@@ -34,7 +34,6 @@ apps:
     post_install:
       - fnm install 24
       - fnm default 24
-      - node --version
 
   claude-code:
     install: npm
@@ -42,8 +41,6 @@ apps:
     category: ai
     tier: auto
     description: Claude Code CLI
-    depends:
-      - fnm
     zsh: |
       alias claude-agent='claude --dangerously-skip-permissions'
 

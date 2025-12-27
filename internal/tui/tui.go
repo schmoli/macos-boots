@@ -135,6 +135,10 @@ func buildCategories(cfg *config.Config) []category {
 	}
 
 	for name, app := range cfg.Apps {
+		// Skip required tier apps - handled at startup
+		if app.Tier == "required" {
+			continue
+		}
 		installed := isInstalledWithPkg(name, app.Install, app.Package)
 		item := appItem{
 			name:        name,
@@ -1350,12 +1354,65 @@ var keys = keyMap{
 	),
 }
 
+func ensureRequiredApps(cfg *config.Config) (needsRestart bool, err error) {
+	for name, app := range cfg.Apps {
+		if app.Tier != "required" {
+			continue
+		}
+		if isInstalledWithPkg(name, app.Install, app.Package) {
+			continue
+		}
+
+		// Install required app
+		fmt.Printf("\033[0;36m→\033[0m Installing required: %s...\n", name)
+
+		switch app.Install {
+		case "brew":
+			cmd := exec.Command("/opt/homebrew/bin/brew", "install", name)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return false, fmt.Errorf("failed to install %s: %w", name, err)
+			}
+		}
+
+		// Add zsh integration
+		if app.Zsh != "" {
+			if err := addZshIntegration(name, app.Zsh); err != nil {
+				fmt.Printf("\033[1;33m⚠\033[0m  Warning: zsh setup failed for %s: %v\n", name, err)
+			}
+		}
+
+		// Run post_install with zsh integration sourced
+		if len(app.PostInstall) > 0 {
+			home, _ := os.UserHomeDir()
+			preamble := ""
+			if app.Zsh != "" {
+				zshFile := filepath.Join(home, ".config", "macos-setup", "apps", name, "zshrc.zsh")
+				preamble = fmt.Sprintf("source %s && ", zshFile)
+			}
+			for _, cmdStr := range app.PostInstall {
+				fmt.Printf("\033[0;36m→\033[0m Running: %s\n", cmdStr)
+				fullCmd := preamble + cmdStr
+				cmd := exec.Command("zsh", "-c", fullCmd)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				cmd.Run() // ignore errors for post_install
+			}
+		}
+
+		needsRestart = true
+	}
+	return needsRestart, nil
+}
+
 func Run() error {
-	m := initialModel()
-	appConfig = m.config
+	home, _ := os.UserHomeDir()
+	configPath := filepath.Join(home, ".config", "macos-setup", "repo", "apps.yaml")
+	cfg, _ := config.Load(configPath)
+	appConfig = cfg
 
 	// Bootstrap core shell aliases on first run
-	home, _ := os.UserHomeDir()
 	coreApps := map[string]string{
 		"macos-setup": "alias macos=macos-setup\nalias refreshenv='source ~/.zshrc'",
 		"brew":        "alias brewup='brew update && brew upgrade'",
@@ -1367,6 +1424,29 @@ func Run() error {
 		}
 	}
 
+	// Check and install required apps before main TUI
+	if cfg != nil {
+		needsRestart, err := ensureRequiredApps(cfg)
+		if err != nil {
+			return err
+		}
+		if needsRestart {
+			fmt.Println()
+			fmt.Println("\033[1;33m⚠\033[0m  Required apps installed. Run: \033[1msource ~/.zshrc && macos-setup\033[0m")
+			fmt.Println()
+			return nil
+		}
+	}
+
+	// Check if npm is available (env is loaded)
+	if _, err := exec.LookPath("npm"); err != nil {
+		fmt.Println()
+		fmt.Println("\033[1;33m⚠\033[0m  Shell environment not loaded. Run: \033[1msource ~/.zshrc && macos-setup\033[0m")
+		fmt.Println()
+		return nil
+	}
+
+	m := initialModel()
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	program = p
 	_, err := p.Run()
