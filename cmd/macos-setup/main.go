@@ -123,6 +123,30 @@ func runUpdate() error {
 	return nil
 }
 
+func isAppInstalled(name string, app config.App) bool {
+	var cmd *exec.Cmd
+	switch app.Install {
+	case "brew":
+		cmd = exec.Command("/opt/homebrew/bin/brew", "list", name)
+	case "cask":
+		cmd = exec.Command("/opt/homebrew/bin/brew", "list", "--cask", name)
+	case "npm":
+		pkg := name
+		if app.Package != "" {
+			pkg = app.Package
+		}
+		cmd = exec.Command("npm", "list", "-g", pkg)
+	case "shell":
+		home, _ := os.UserHomeDir()
+		appDir := filepath.Join(home, ".config", "macos-setup", "apps", name)
+		_, err := os.Stat(appDir)
+		return err == nil
+	default:
+		return false
+	}
+	return cmd.Run() == nil
+}
+
 func runInstallAll() error {
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".config", "macos-setup", "repo", "apps.yaml")
@@ -140,6 +164,12 @@ func runInstallAll() error {
 	for name, app := range cfg.Apps {
 		// Skip required tier (already installed at startup)
 		if app.Tier == "required" {
+			continue
+		}
+
+		// Skip already installed
+		if isAppInstalled(name, app) {
+			fmt.Printf("✓ %s (already installed)\n", name)
 			continue
 		}
 
