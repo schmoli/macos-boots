@@ -13,10 +13,10 @@ CLI tool for setting up a fresh macOS developer machine.
 ```zsh
 curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
 source ~/.zshrc
-macos-setup
+macos-setup cli      # Install CLI tools
 ```
 
-First run installs Go, builds the CLI, then shows status.
+First-run bootstrap (Go, fnm, Node, build) happens during curl | sh.
 
 ## Commands
 
