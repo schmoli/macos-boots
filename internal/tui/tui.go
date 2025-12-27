@@ -324,11 +324,20 @@ func installAppCmd(name string) tea.Cmd {
 		// Run post_install commands if defined
 		if success && appConfig != nil {
 			if app, ok := appConfig.Apps[name]; ok && len(app.PostInstall) > 0 {
+				// Build shell preamble to source app's zsh integration
+				home, _ := os.UserHomeDir()
+				preamble := ""
+				if app.Zsh != "" {
+					zshFile := filepath.Join(home, ".config", "macos-setup", "apps", name, "zshrc.zsh")
+					preamble = fmt.Sprintf("source %s && ", zshFile)
+				}
+
 				for _, cmdStr := range app.PostInstall {
 					if program != nil {
 						program.Send(logLineMsg(fmt.Sprintf("Running: %s", cmdStr)))
 					}
-					cmd := exec.Command("zsh", "-c", cmdStr)
+					fullCmd := preamble + cmdStr
+					cmd := exec.Command("zsh", "-c", fullCmd)
 					stdout, _ := cmd.StdoutPipe()
 					stderr, _ := cmd.StderrPipe()
 					cmd.Start()
