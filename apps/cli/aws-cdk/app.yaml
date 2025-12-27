@@ -1,0 +1,3 @@
+install: npm
+package: aws-cdk
+description: AWS Cloud Development Kit CLI

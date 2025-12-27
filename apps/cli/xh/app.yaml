@@ -1,0 +1,2 @@
+install: brew
+description: Fast HTTPie alternative in Rust

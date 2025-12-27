@@ -1,0 +1,2 @@
+install: brew
+description: Template-free customization of Kubernetes YAML

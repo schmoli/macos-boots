@@ -1,0 +1,4 @@
+install: brew
+description: Kubernetes TUI to manage clusters in style
+post_install:
+  - k9s completion zsh > $(brew --prefix)/share/zsh/site-functions/_k9s
