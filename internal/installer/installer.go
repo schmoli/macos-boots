@@ -389,6 +389,9 @@ func AutoPull() bool {
 	logCmd.Dir = repoDir
 	logOutput, _ := logCmd.Output()
 
+	// Save old HEAD for diff check
+	oldHead := strings.TrimSpace(string(localHash))
+
 	// Pull silently
 	LogProgress("Pulling updates...")
 	cmd = exec.Command("git", "pull", "--rebase", "-q")
@@ -403,6 +406,23 @@ func AutoPull() bool {
 		}
 	}
 	LogSuccess(fmt.Sprintf("Updated (%d commits)", len(commits)))
+
+	// Check if Go files changed
+	diffCmd := exec.Command("git", "diff", "--name-only", oldHead, "HEAD")
+	diffCmd.Dir = repoDir
+	diffOutput, _ := diffCmd.Output()
+
+	needsRebuild := false
+	for _, file := range strings.Split(string(diffOutput), "\n") {
+		if strings.HasSuffix(file, ".go") || file == "go.mod" || file == "go.sum" {
+			needsRebuild = true
+			break
+		}
+	}
+
+	if !needsRebuild {
+		return true
+	}
 
 	// Rebuild binary
 	LogProgress("Rebuilding...")
