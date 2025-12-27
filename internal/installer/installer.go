@@ -166,11 +166,16 @@ func Install(apps map[string]config.App, verbose bool) (*Result, error) {
 		}
 	}
 
-	// Post-install: zsh integrations and hooks (will be added in Task 4)
+	// Post-install: run post_install hooks
 	for name, app := range apps {
 		if contains(result.Installed, name) {
 			configureApp(name, app)
 		}
+	}
+
+	// Ensure shell integration is set up
+	if len(result.Installed) > 0 {
+		EnsureShellIntegration()
 	}
 
 	return result, nil
@@ -295,22 +300,21 @@ func configureApp(name string, app config.App) {
 	}
 }
 
-func addZshIntegration(name, zshContent string) error {
+// EnsureShellIntegration ensures ~/.zshrc sources the repo init files
+func EnsureShellIntegration() error {
 	home, _ := os.UserHomeDir()
 	baseDir := filepath.Join(home, ".config", "macos-setup")
-	appDir := filepath.Join(baseDir, "apps", name)
 
-	if err := os.MkdirAll(appDir, 0755); err != nil {
-		return err
-	}
-
-	// Write init.zsh (sources all app zsh files)
+	// Write init.zsh that sources from repo
 	initPath := filepath.Join(baseDir, "init.zsh")
 	initContent := `# macos-setup shell integration (auto-generated)
-for f in $HOME/.config/macos-setup/apps/*/*.zsh(N); do
+for f in ~/.config/macos-setup/repo/apps/*/*/init.zsh(N); do
   source "$f"
 done
 `
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		return err
+	}
 	if err := os.WriteFile(initPath, []byte(initContent), 0644); err != nil {
 		return err
 	}
@@ -332,9 +336,7 @@ done
 		os.WriteFile(markerPath, []byte{}, 0644)
 	}
 
-	// Write app zshrc
-	appZshPath := filepath.Join(appDir, "zshrc.zsh")
-	return os.WriteFile(appZshPath, []byte(strings.TrimSpace(zshContent)+"\n"), 0644)
+	return nil
 }
 
 // CheckZshrcModified returns true if zshrc was modified, clears the marker
