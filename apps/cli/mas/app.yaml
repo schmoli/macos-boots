@@ -1,3 +1,2 @@
 install: brew
-tier: required
 description: Mac App Store CLI

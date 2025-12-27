@@ -15,7 +15,6 @@ type Config struct {
 type App struct {
 	Install     string     `yaml:"install"`
 	Category    string     `yaml:"-"` // inferred from path
-	Tier        string     `yaml:"tier"`
 	Description string     `yaml:"description"`
 	Package     string     `yaml:"package"`
 	ID          int        `yaml:"id"`

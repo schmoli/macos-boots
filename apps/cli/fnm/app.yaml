@@ -1,5 +1,4 @@
 install: brew
-tier: required
 description: Fast Node.js version manager
 post_install:
   - fnm install 24

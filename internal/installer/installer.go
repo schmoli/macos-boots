@@ -119,11 +119,6 @@ func Install(apps map[string]config.App, verbose bool) (*Result, error) {
 	masApps := make(map[string]config.App)
 
 	for name, app := range apps {
-		// Skip required tier
-		if app.Tier == "required" {
-			continue
-		}
-
 		pkg := name
 		if app.Package != "" {
 			pkg = app.Package

@@ -24,7 +24,6 @@ apps/
 ```yaml
 install: brew|cask|npm|mas|shell
 description: string         # short, no period
-tier: required|auto         # optional, omit for auto
 package: string             # optional, if pkg name differs from key
 id: number                  # mas only, App Store ID
 depends: [string]           # optional, list of app keys
@@ -62,15 +61,6 @@ eval "$(zoxide init zsh)"
 | apps | GUI applications (.app bundles, casks, App Store) |
 
 **Inference**: cask/mas → apps, brew/npm/shell → cli
-
-## Tiers
-
-| Tier | Behavior |
-|------|----------|
-| required | Auto-installs on first run (fnm, mas) |
-| auto | Normal install (default) |
-
-Omit tier field for auto behavior.
 
 ## Common Dependency Patterns
 
@@ -145,7 +135,6 @@ apps/cli/fnm/app.yaml:
 ```
 ```yaml
 install: brew
-tier: required
 description: Fast Node.js version manager
 post_install:
   - fnm install 24
