@@ -41,6 +41,13 @@ if [[ ! -x "/opt/homebrew/bin/brew" ]]; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Add Homebrew to zshrc if not there
+if ! grep -q '/opt/homebrew/bin/brew shellenv' ~/.zshrc 2>/dev/null; then
+  echo "" >> ~/.zshrc
+  echo "# Homebrew" >> ~/.zshrc
+  echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
+fi
 echo "${BLUE}✓${NC} Homebrew"
 
 # Go

@@ -48,6 +48,13 @@ func runUpdate() error {
 	repoDir := filepath.Join(home, ".config", "macos-setup", "repo")
 	binPath := filepath.Join(repoDir, "bin", "macos-setup")
 
+	// Ensure Homebrew is in PATH for go commands
+	brewPrefix := "/opt/homebrew"
+	path := os.Getenv("PATH")
+	if _, err := os.Stat(brewPrefix + "/bin/brew"); err == nil {
+		os.Setenv("PATH", brewPrefix+"/bin:"+brewPrefix+"/sbin:"+path)
+	}
+
 	fmt.Println("Updating macos-setup...")
 	fmt.Println()
 
@@ -68,6 +75,7 @@ func runUpdate() error {
 	fmt.Println("→ Rebuilding...")
 	cmd = exec.Command("go", "mod", "tidy")
 	cmd.Dir = repoDir
+	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -76,6 +84,7 @@ func runUpdate() error {
 
 	cmd = exec.Command("go", "build", "-o", binPath, "./cmd/macos-setup/")
 	cmd.Dir = repoDir
+	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
