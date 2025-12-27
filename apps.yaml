@@ -1,9 +1,18 @@
 apps:
+  macos-setup:
+    install: shell
+    category: cli
+    tier: auto
+    description: This tool (aliases)
+    zsh: |
+      alias macos=macos-setup
+      alias refreshenv='source ~/.zshrc'
+
   brew:
     install: shell
     category: cli
     tier: auto
-    description: Package manager (pre-installed)
+    description: Package manager (aliases)
     zsh: |
       alias brewup='brew update && brew upgrade'
 
