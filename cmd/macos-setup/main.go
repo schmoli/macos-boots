@@ -68,8 +68,8 @@ func main() {
 
 func loadConfig() (*config.Config, error) {
 	home, _ := os.UserHomeDir()
-	configPath := filepath.Join(home, ".config", "macos-setup", "repo", "apps.yaml")
-	return config.Load(configPath)
+	appsDir := filepath.Join(home, ".config", "macos-setup", "repo", "apps")
+	return config.Load(appsDir)
 }
 
 func runInstall(cfg *config.Config, category string) error {
