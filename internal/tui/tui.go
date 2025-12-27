@@ -559,6 +559,27 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.progressMsg = fmt.Sprintf("Installing %s... (1/%d)", toInstall[0], len(toInstall))
 			return m, installAppCmd(toInstall[0])
 		}
+	case key.Matches(msg, keys.Remove):
+		// Remove all selected installed apps across all categories
+		var toRemove []string
+		seen := make(map[string]bool)
+
+		for catIdx := range m.categories {
+			for _, app := range m.categories[catIdx].apps {
+				if app.selected && app.installed && !seen[app.name] {
+					toRemove = append(toRemove, app.name)
+					seen[app.name] = true
+				}
+			}
+		}
+
+		if len(toRemove) > 0 {
+			m.state = stateRemoving
+			m.progressApps = toRemove
+			m.progressIdx = 0
+			m.progressMsg = fmt.Sprintf("Removing %s... (1/%d)", toRemove[0], len(toRemove))
+			return m, removeAppCmd(toRemove[0])
+		}
 	}
 	return m, nil
 }
@@ -830,9 +851,13 @@ func (m model) buildFooter() string {
 		parts = append(parts, "esc back")
 	} else {
 		parts = append(parts, "enter sel", "a all")
-		totalSelected := m.totalSelectedCount()
-		if totalSelected > 0 {
-			parts = append(parts, fmt.Sprintf("i inst(%d)", totalSelected))
+		totalToInstall := m.totalSelectedCount()
+		totalToRemove := m.totalSelectedInstalledCount()
+		if totalToInstall > 0 {
+			parts = append(parts, fmt.Sprintf("i inst(%d)", totalToInstall))
+		}
+		if totalToRemove > 0 {
+			parts = append(parts, fmt.Sprintf("r rem(%d)", totalToRemove))
 		}
 	}
 
@@ -851,6 +876,18 @@ func (m model) totalSelectedCount() int {
 	for _, cat := range m.categories {
 		for _, app := range cat.apps {
 			if app.selected && !app.installed {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+func (m model) totalSelectedInstalledCount() int {
+	count := 0
+	for _, cat := range m.categories {
+		for _, app := range cat.apps {
+			if app.selected && app.installed {
 				count++
 			}
 		}
