@@ -15,3 +15,4 @@ Log of apps added via `/add-app` skill.
 2025-12-26 | helm | cli | Kubernetes package manager
 2025-12-26 | twingate | apps | zero trust network access
 2025-12-27 | windows-app | apps | connect to Windows
+2025-12-27 | localsend | apps | AirDrop alternative

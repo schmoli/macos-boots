@@ -162,6 +162,11 @@ apps:
     tier: auto
     description: Claude macOS app
 
+  localsend:
+    install: cask
+    category: apps
+    description: Open-source cross-platform alternative to AirDrop
+
   twingate:
     install: cask
     category: apps
