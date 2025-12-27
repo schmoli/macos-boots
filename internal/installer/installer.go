@@ -591,6 +591,9 @@ func Status(cfg *config.Config) {
 		return
 	}
 
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))
+	fmt.Println()
+	fmt.Println(titleStyle.Render("Status"))
 	fmt.Println()
 	fmt.Println(strings.Join(sections, "\n\n"))
 	fmt.Println()
