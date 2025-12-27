@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/schmoli/macos-setup/internal/config"
@@ -403,6 +404,19 @@ func AutoPull() bool {
 	}
 	LogSuccess(fmt.Sprintf("Updated (%d commits)", len(commits)))
 
+	// Rebuild binary
+	LogProgress("Rebuilding...")
+	binary := filepath.Join(repoDir, "bin", "macos-setup")
+	buildCmd := exec.Command("go", "build", "-o", binary, "./cmd/macos-setup/")
+	buildCmd.Dir = repoDir
+	if err := buildCmd.Run(); err != nil {
+		LogFail("Rebuild failed: " + err.Error())
+		return true
+	}
+	LogSuccess("Rebuilt")
+
+	// Re-exec with new binary
+	syscall.Exec(binary, os.Args, os.Environ())
 	return true
 }
 
