@@ -846,12 +846,22 @@ func (m model) viewCategoryContent() string {
 	if len(m.requiredDeps) > 0 {
 		s += "\n" + statusStyle.Render("Dependencies:") + "\n"
 		for dep, apps := range m.requiredDeps {
-			installed := "○"
-			if isInstalled(dep, "brew") {
-				installed = "✓"
+			status := "○"
+			// Check if currently installing
+			installing := false
+			for i, name := range m.progressApps {
+				if name == dep && i >= m.progressIdx {
+					installing = true
+					break
+				}
+			}
+			if installing {
+				status = "◐" // in progress
+			} else if isInstalled(dep, "brew") {
+				status = "✓"
 			}
 			appList := strings.Join(apps, ", ")
-			line := fmt.Sprintf("     %s %-12s %s", installed, dep, statusStyle.Render("["+appList+"]"))
+			line := fmt.Sprintf("     %s %-12s %s", status, dep, statusStyle.Render("["+appList+"]"))
 			s += appStyle.Render(line) + "\n"
 		}
 	}
