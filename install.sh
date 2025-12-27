@@ -23,6 +23,16 @@ if [[ "$(uname -m)" != "arm64" ]]; then
   exit 1
 fi
 
+# Require Homebrew
+if [[ ! -x "/opt/homebrew/bin/brew" ]]; then
+  echo ""
+  echo "Error: Homebrew required"
+  echo ""
+  echo "Install Homebrew: https://brew.sh"
+  echo ""
+  exit 1
+fi
+
 # Download repo (use curl+tar since git might not exist yet)
 mkdir -p "$REPO_DIR"
 echo "Downloading..."
@@ -47,21 +57,8 @@ if ! grep -q "$BINARY_DIR" ~/.zshrc 2>/dev/null; then
 fi
 
 echo ""
-
-# Check CLT and give appropriate instructions
-if ! xcode-select -p &>/dev/null; then
-  echo "Almost ready! First install Xcode Command Line Tools:"
-  echo ""
-  echo "    xcode-select --install"
-  echo ""
-  echo "Then:"
-  echo ""
-  echo "    source ~/.zshrc"
-  echo "    macos-setup"
-else
-  echo "Ready! Run:"
-  echo ""
-  echo "    source ~/.zshrc"
-  echo "    macos-setup"
-fi
+echo "Ready! Run:"
+echo ""
+echo "    source ~/.zshrc"
+echo "    macos-setup"
 echo ""

@@ -13,14 +13,12 @@ YELLOW='\033[1;33m'
 DIM='\033[0;90m'
 NC='\033[0m'
 
-# Check CLT first
-if ! xcode-select -p &>/dev/null; then
+# Check Homebrew
+if [[ ! -x "/opt/homebrew/bin/brew" ]]; then
   echo ""
-  echo "${YELLOW}⚡ Xcode Command Line Tools required${NC}"
+  echo "Error: Homebrew required"
   echo ""
-  echo "Run:  xcode-select --install"
-  echo ""
-  echo "Then re-run:  macos-setup"
+  echo "Install Homebrew: https://brew.sh"
   echo ""
   exit 1
 fi
@@ -46,23 +44,8 @@ echo "${GREEN}macos-setup${NC} - First Time Setup"
 echo "================================"
 echo ""
 
-# Homebrew
-if [[ ! -x "/opt/homebrew/bin/brew" ]]; then
-  echo "${CYAN}⏳ Installing Homebrew...${NC} (requires admin password)"
-  sudo -v
-  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" >/dev/null
-fi
+# Set up Homebrew environment
 eval "$(/opt/homebrew/bin/brew shellenv)"
-
-# Add Homebrew to zshrc if not there
-if ! grep -q '/opt/homebrew/bin/brew shellenv' ~/.zshrc 2>/dev/null; then
-  echo "" >> ~/.zshrc
-  echo "# Homebrew" >> ~/.zshrc
-  echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
-  # Mark that we modified zshrc
-  touch "$HOME/.config/macos-setup/.zshrc-modified"
-fi
-echo "${GREEN}✅ Homebrew${NC}"
 
 # Go
 if [[ ! -x "$(brew --prefix)/bin/go" ]]; then
