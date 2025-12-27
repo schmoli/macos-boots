@@ -58,8 +58,8 @@ eval "$(fnm env --use-on-cd)"
 NODE_VERSION=24
 if ! fnm list 2>/dev/null | grep -q "v${NODE_VERSION}"; then
   echo "${CYAN}⏳ Installing Node.js ${NODE_VERSION}...${NC}"
-  fnm install ${NODE_VERSION}
-  fnm default ${NODE_VERSION}
+  fnm install "${NODE_VERSION}"
+  fnm default "${NODE_VERSION}"
 fi
 echo "${GREEN}✅ Node.js ${NODE_VERSION}${NC}"
 
