@@ -383,13 +383,25 @@ func AutoPull() bool {
 		return false
 	}
 
-	// Pull
+	// Get changelog before pull
+	logCmd := exec.Command("git", "log", "HEAD..origin/main", "--oneline", "--format=%s")
+	logCmd.Dir = repoDir
+	logOutput, _ := logCmd.Output()
+
+	// Pull silently
 	LogProgress("Pulling updates...")
-	cmd = exec.Command("git", "pull", "--rebase")
+	cmd = exec.Command("git", "pull", "--rebase", "-q")
 	cmd.Dir = repoDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	cmd.Run()
+
+	// Display changelog
+	commits := strings.Split(strings.TrimSpace(string(logOutput)), "\n")
+	for _, msg := range commits {
+		if msg != "" {
+			LogDim("• " + msg)
+		}
+	}
+	LogSuccess(fmt.Sprintf("Updated (%d commits)", len(commits)))
 
 	return true
 }
