@@ -96,6 +96,13 @@ func runInstall(cfg *config.Config, category string) error {
 	if len(result.Failed) > 0 {
 		installer.LogFail(fmt.Sprintf("Failed: %v", result.Failed))
 	}
+	if len(result.Installed) == 0 && len(result.Failed) == 0 {
+		label := "tools"
+		if category != "" {
+			label = category + " tools"
+		}
+		installer.LogSuccess(fmt.Sprintf("All %s installed", label))
+	}
 
 	return nil
 }
