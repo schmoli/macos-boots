@@ -5,8 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/schmoli/macos-setup/internal/config"
 	"github.com/schmoli/macos-setup/internal/state"
 )
@@ -419,7 +421,7 @@ func Upgrade(cfg *config.Config) error {
 	return nil
 }
 
-// Status prints installed vs available apps
+// Status prints installed apps in a styled table
 func Status(cfg *config.Config) {
 	installed := InstalledBrewPackages()
 
@@ -437,45 +439,80 @@ func Status(cfg *config.Config) {
 		}
 	}
 
-	byCategory := make(map[string][]string)
-	byStatus := make(map[string]map[string][]string) // category -> status -> names
+	// Collect installed apps by category
+	type appInfo struct {
+		name string
+		desc string
+	}
+	byCategory := make(map[string][]appInfo)
 
 	for name, app := range cfg.Apps {
-		if app.Tier == "required" {
-			continue
-		}
-
 		pkg := name
 		if app.Package != "" {
 			pkg = app.Package
 		}
 
-		isInstalled := installed[pkg] || npmInstalled[name]
-		status := "available"
-		if isInstalled {
-			status = "installed"
+		isInst := installed[pkg] || npmInstalled[name]
+		if isInst {
+			byCategory[app.Category] = append(byCategory[app.Category], appInfo{name, app.Description})
 		}
-
-		if byStatus[app.Category] == nil {
-			byStatus[app.Category] = make(map[string][]string)
-		}
-		byStatus[app.Category][status] = append(byStatus[app.Category][status], name)
-		byCategory[app.Category] = append(byCategory[app.Category], name)
 	}
 
+	// Sort apps within each category
+	for cat := range byCategory {
+		sort.Slice(byCategory[cat], func(i, j int) bool {
+			return byCategory[cat][i].name < byCategory[cat][j].name
+		})
+	}
+
+	// Styles
+	headerStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205")).
+		PaddingLeft(1)
+
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("86")).
+		Width(14).
+		PaddingLeft(2)
+
+	descStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("245"))
+
+	borderStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Padding(0, 1)
+
 	categories := []string{"cli", "apps", "mas"}
+	var sections []string
+
 	for _, cat := range categories {
-		if len(byCategory[cat]) == 0 {
+		apps := byCategory[cat]
+		if len(apps) == 0 {
 			continue
 		}
 
-		fmt.Printf("\n%s:\n", cat)
-		if len(byStatus[cat]["installed"]) > 0 {
-			fmt.Printf("  ✓ %s\n", strings.Join(byStatus[cat]["installed"], ", "))
+		// Header
+		header := headerStyle.Render(fmt.Sprintf("%s (%d)", cat, len(apps)))
+
+		// Rows
+		var rows []string
+		for _, app := range apps {
+			row := nameStyle.Render(app.name) + descStyle.Render(app.desc)
+			rows = append(rows, row)
 		}
-		if len(byStatus[cat]["available"]) > 0 {
-			fmt.Printf("  ○ %s\n", strings.Join(byStatus[cat]["available"], ", "))
-		}
+
+		content := header + "\n" + strings.Join(rows, "\n")
+		sections = append(sections, borderStyle.Render(content))
 	}
+
+	if len(sections) == 0 {
+		fmt.Println("No apps installed.")
+		return
+	}
+
+	fmt.Println()
+	fmt.Println(strings.Join(sections, "\n\n"))
 	fmt.Println()
 }
