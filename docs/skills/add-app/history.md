@@ -22,3 +22,4 @@ Log of apps added via `/add-app` skill.
 2025-12-27 | cleanshot | apps |
 2025-12-27 | font-jetbrains-mono-nerd-font | cli | dev font with icons
 2025-12-27 | claude-code | cli | npm package
+2025-12-27 | kustomize | cli | removed
