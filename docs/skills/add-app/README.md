@@ -47,9 +47,8 @@ apps:
 
 | Tier | Behavior |
 |------|----------|
-| required | Auto-installs before TUI launches |
-| auto | Normal install, no special handling (default) |
-| interactive | Needs user input (e.g., App Store sign-in) |
+| required | Auto-installs on first run (fnm, mas) |
+| auto | Normal install (default) |
 
 Omit tier field for auto behavior.
 
