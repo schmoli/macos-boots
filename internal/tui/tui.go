@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -79,24 +80,36 @@ const (
 	layoutHorizontal                   // side-by-side
 )
 
+var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+
 type model struct {
-	config       *config.Config
-	categories   []category
-	cursor       int
-	inCategory   bool
-	appCursor    int
-	quitting     bool
-	state        installState
-	progressMsg  string
-	progressIdx  int
-	progressApps []string
-	width        int
-	height       int
-	layout       layoutMode
-	logLines     []string
-	logScroll    int
-	requiredDeps map[string][]string // dep name -> apps requiring it
-	pendingMas   []string            // mas apps to install after TUI exits
+	config        *config.Config
+	categories    []category
+	cursor        int
+	inCategory    bool
+	appCursor     int
+	quitting      bool
+	state         installState
+	progressMsg   string
+	progressIdx   int
+	progressApps  []string
+	width         int
+	height        int
+	layout        layoutMode
+	logLines      []string
+	logScroll     int
+	requiredDeps  map[string][]string // dep name -> apps requiring it
+	pendingMas    []string            // mas apps to install after TUI exits
+	spinnerIdx    int
+	installResults []string // summary of install results
+}
+
+type spinnerTickMsg time.Time
+
+func spinnerTick() tea.Cmd {
+	return tea.Tick(80*time.Millisecond, func(t time.Time) tea.Msg {
+		return spinnerTickMsg(t)
+	})
 }
 
 func initialModel() model {
@@ -602,6 +615,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.logScroll = len(m.logLines) - maxVisible
 		}
 		return m, tea.SetWindowTitle("macos-setup")
+	case spinnerTickMsg:
+		if m.state != stateIdle {
+			m.spinnerIdx = (m.spinnerIdx + 1) % len(spinnerFrames)
+			return m, spinnerTick()
+		}
+		return m, nil
 	case masQueueMsg:
 		m.pendingMas = append(m.pendingMas, msg.name)
 		return m, nil
@@ -707,6 +726,13 @@ func (m *model) removeDeps(appName string) {
 }
 
 func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd) {
+	// Track result
+	status := "✓"
+	if !msg.success {
+		status = "✗"
+	}
+	m.installResults = append(m.installResults, fmt.Sprintf("%s %s", status, msg.name))
+
 	// Search all categories for the app
 	for catIdx := range m.categories {
 		for appIdx := range m.categories[catIdx].apps {
@@ -726,9 +752,13 @@ func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd
 		return m, tea.Batch(tea.SetWindowTitle("macos-setup"), installAppCmd(nextApp))
 	}
 
+	// Show summary
+	summary := fmt.Sprintf("Done: %s", strings.Join(m.installResults, ", "))
+	m.progressMsg = summary
+
 	m.state = stateIdle
-	m.progressMsg = ""
 	m.progressApps = nil
+	m.installResults = nil
 	// Clear all selections when done
 	for catIdx := range m.categories {
 		for appIdx := range m.categories[catIdx].apps {
@@ -740,6 +770,13 @@ func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd
 }
 
 func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) {
+	// Track result
+	status := "✓"
+	if !msg.success {
+		status = "✗"
+	}
+	m.installResults = append(m.installResults, fmt.Sprintf("%s %s", status, msg.name))
+
 	// Search all categories for the app
 	for catIdx := range m.categories {
 		for appIdx := range m.categories[catIdx].apps {
@@ -761,9 +798,13 @@ func (m model) handleRemoveComplete(msg removeCompleteMsg) (tea.Model, tea.Cmd) 
 		return m, tea.Batch(tea.SetWindowTitle("macos-setup"), removeAppCmd(nextApp))
 	}
 
+	// Show summary
+	summary := fmt.Sprintf("Done: %s", strings.Join(m.installResults, ", "))
+	m.progressMsg = summary
+
 	m.state = stateIdle
-	m.progressMsg = ""
 	m.progressApps = nil
+	m.installResults = nil
 	return m, tea.SetWindowTitle("macos-setup")
 }
 
@@ -841,8 +882,9 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.state = stateInstalling
 			m.progressApps = toInstall
 			m.progressIdx = 0
+			m.installResults = nil
 			m.progressMsg = fmt.Sprintf("Installing %s... (1/%d)", toInstall[0], len(toInstall))
-			return m, installAppCmd(toInstall[0])
+			return m, tea.Batch(spinnerTick(), installAppCmd(toInstall[0]))
 		}
 	case key.Matches(msg, keys.Remove):
 		// Remove all selected installed apps across all categories
@@ -862,8 +904,9 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.state = stateRemoving
 			m.progressApps = toRemove
 			m.progressIdx = 0
+			m.installResults = nil
 			m.progressMsg = fmt.Sprintf("Removing %s... (1/%d)", toRemove[0], len(toRemove))
-			return m, removeAppCmd(toRemove[0])
+			return m, tea.Batch(spinnerTick(), removeAppCmd(toRemove[0]))
 		}
 	case key.Matches(msg, keys.InstallForce):
 		// Reinstall all selected installed apps across all categories
@@ -883,8 +926,9 @@ func (m model) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.state = stateInstalling
 			m.progressApps = toReinstall
 			m.progressIdx = 0
+			m.installResults = nil
 			m.progressMsg = fmt.Sprintf("Reinstalling %s... (1/%d)", toReinstall[0], len(toReinstall))
-			return m, reinstallAppCmd(toReinstall[0])
+			return m, tea.Batch(spinnerTick(), reinstallAppCmd(toReinstall[0]))
 		}
 	}
 	return m, nil
@@ -961,8 +1005,9 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.state = stateInstalling
 			m.progressApps = toInstall
 			m.progressIdx = 0
+			m.installResults = nil
 			m.progressMsg = fmt.Sprintf("Installing %s... (1/%d)", toInstall[0], len(toInstall))
-			return m, installAppCmd(toInstall[0])
+			return m, tea.Batch(spinnerTick(), installAppCmd(toInstall[0]))
 		}
 	case key.Matches(msg, keys.Remove):
 		selected := cat.getSelectedNames()
@@ -980,8 +1025,9 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.state = stateRemoving
 				m.progressApps = toRemove
 				m.progressIdx = 0
+				m.installResults = nil
 				m.progressMsg = fmt.Sprintf("Removing %s... (1/%d)", toRemove[0], len(toRemove))
-				return m, removeAppCmd(toRemove[0])
+				return m, tea.Batch(spinnerTick(), removeAppCmd(toRemove[0]))
 			}
 		}
 	case key.Matches(msg, keys.InstallForce):
@@ -1000,8 +1046,9 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.state = stateInstalling
 				m.progressApps = toReinstall
 				m.progressIdx = 0
+				m.installResults = nil
 				m.progressMsg = fmt.Sprintf("Reinstalling %s... (1/%d)", toReinstall[0], len(toReinstall))
-				return m, reinstallAppCmd(toReinstall[0])
+				return m, tea.Batch(spinnerTick(), reinstallAppCmd(toReinstall[0]))
 			}
 		}
 	case key.Matches(msg, keys.Layout):
@@ -1075,7 +1122,8 @@ func (m model) View() string {
 	}
 	paneFooter := ""
 	if m.progressMsg != "" {
-		paneFooter = progressStyle.Render(m.progressMsg)
+		spinner := spinnerFrames[m.spinnerIdx]
+		paneFooter = progressStyle.Render(spinner + " " + m.progressMsg)
 	}
 	mainPane = m.renderPane("", content, paneFooter, mainWidth, mainHeight)
 
