@@ -21,6 +21,7 @@ type App struct {
 	Config      *AppConfig `yaml:"config"`
 	PostInstall []string   `yaml:"post_install"`
 	Depends     []string   `yaml:"depends"`
+	Init        bool       `yaml:"init"` // marks app as init/base tool
 }
 
 type AppConfig struct {
@@ -129,6 +130,17 @@ func (c *Config) FilterByInstallType(types ...string) map[string]App {
 	result := make(map[string]App)
 	for name, app := range c.Apps {
 		if typeSet[strings.ToLower(app.Install)] {
+			result[name] = app
+		}
+	}
+	return result
+}
+
+// InitApps returns all apps marked with init: true
+func (c *Config) InitApps() map[string]App {
+	result := make(map[string]App)
+	for name, app := range c.Apps {
+		if app.Init {
 			result[name] = app
 		}
 	}
