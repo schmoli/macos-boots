@@ -51,3 +51,4 @@ apps:
     post_install:
       - fnm install 24
       - fnm default 24
+      - npm install -g npm@latest
