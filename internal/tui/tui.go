@@ -96,6 +96,7 @@ type model struct {
 	logLines     []string
 	logScroll    int
 	requiredDeps map[string][]string // dep name -> apps requiring it
+	pendingMas   []string            // mas apps to install after TUI exits
 }
 
 func initialModel() model {
@@ -267,6 +268,10 @@ type removeCompleteMsg struct {
 	success bool
 }
 
+type masQueueMsg struct {
+	name string
+}
+
 type logLineMsg string
 
 var program *tea.Program
@@ -311,18 +316,13 @@ func installAppCmd(name string) tea.Cmd {
 				success = msg.success
 			}
 		case "mas":
-			// Get app ID from config
-			appID := ""
-			if appConfig != nil {
-				if app, ok := appConfig.Apps[name]; ok {
-					appID = fmt.Sprintf("%d", app.ID)
-				}
+			// mas apps queued for install after TUI exits (needs terminal for password)
+			if program != nil {
+				program.Send(logLineMsg(fmt.Sprintf("Queued %s for install after exit", name)))
+				program.Send(masQueueMsg{name: name})
 			}
-			cmd := exec.Command("mas", "install", appID)
-			r := runCmdWithOutput(cmd, name, true)
-			if msg, ok := r.(installCompleteMsg); ok {
-				success = msg.success
-			}
+			// Return success - actual install happens after TUI
+			success = true
 		default:
 			// brew, cask
 			cmd := exec.Command("/opt/homebrew/bin/brew", "install", pkgName)
@@ -602,6 +602,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.logScroll = len(m.logLines) - maxVisible
 		}
 		return m, tea.SetWindowTitle("macos-setup")
+	case masQueueMsg:
+		m.pendingMas = append(m.pendingMas, msg.name)
+		return m, nil
 	case installCompleteMsg:
 		return m.handleInstallComplete(msg)
 	case removeCompleteMsg:
@@ -1481,7 +1484,26 @@ func Run() error {
 	m := initialModel()
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	program = p
-	_, err := p.Run()
+	finalModel, err := p.Run()
+
+	// Install queued mas apps with terminal control
+	if fm, ok := finalModel.(model); ok && len(fm.pendingMas) > 0 {
+		fmt.Println()
+		fmt.Println("\033[0;36m→\033[0m Installing App Store apps...")
+		for _, name := range fm.pendingMas {
+			if cfg != nil {
+				if app, ok := cfg.Apps[name]; ok {
+					appID := fmt.Sprintf("%d", app.ID)
+					fmt.Printf("\033[0;36m→\033[0m Installing %s (ID: %s)...\n", name, appID)
+					cmd := exec.Command("mas", "install", appID)
+					cmd.Stdin = os.Stdin
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Run()
+				}
+			}
+		}
+	}
 
 	// Check if .zshrc was modified and notify user
 	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
