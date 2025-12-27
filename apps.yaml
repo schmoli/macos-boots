@@ -23,6 +23,38 @@ apps:
     tier: auto
     description: Cat with syntax highlighting
 
+  ripgrep:
+    install: brew
+    category: cli
+    tier: auto
+    description: Fast grep alternative (rg)
+
+  fzf:
+    install: brew
+    category: cli
+    tier: auto
+    description: Fuzzy finder
+
+  fd:
+    install: brew
+    category: cli
+    tier: auto
+    description: Fast find alternative
+
+  eza:
+    install: brew
+    category: cli
+    tier: auto
+    description: Modern ls replacement
+
+  zoxide:
+    install: brew
+    category: cli
+    tier: auto
+    description: Smarter cd command
+    zsh: |
+      eval "$(zoxide init zsh)"
+
   fnm:
     install: brew
     category: dev
