@@ -172,6 +172,11 @@ apps:
     category: apps
     description: Move and resize windows using keyboard shortcuts or snap areas
 
+  sf-symbols:
+    install: cask
+    category: apps
+    description: Tool that provides consistent, highly configurable symbols for apps
+
   twingate:
     install: cask
     category: apps
