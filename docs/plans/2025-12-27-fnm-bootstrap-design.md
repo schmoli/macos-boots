@@ -24,6 +24,12 @@ Move fnm and node installation from app.yaml to setup.sh bootstrap phase. This e
 
 ### Update setup.sh
 
+Add variable at top of file (after color definitions):
+
+```bash
+NODE_VERSION=24
+```
+
 Add after Go installation, before build:
 
 ```bash
@@ -36,12 +42,12 @@ eval "$(fnm env --use-on-cd)"
 echo "${GREEN}✅ fnm${NC}"
 
 # Node.js
-if ! fnm list | grep -q "v24"; then
-  echo "${CYAN}⏳ Installing Node.js 24...${NC}"
-  fnm install 24
-  fnm default 24
+if ! fnm list | grep -q "v${NODE_VERSION}"; then
+  echo "${CYAN}⏳ Installing Node.js ${NODE_VERSION}...${NC}"
+  fnm install ${NODE_VERSION}
+  fnm default ${NODE_VERSION}
 fi
-echo "${GREEN}✅ Node.js${NC}"
+echo "${GREEN}✅ Node.js ${NODE_VERSION}${NC}"
 
 # Add fnm to zshrc if not there
 if ! grep -q 'fnm env --use-on-cd' ~/.zshrc 2>/dev/null; then
