@@ -37,10 +37,9 @@ echo ""
 
 # Homebrew
 if [[ ! -x "/opt/homebrew/bin/brew" ]]; then
-  echo "${BLUE}→${NC} Installing Homebrew..."
-  echo "    (requires admin password)"
-  sudo -v  # prompt for password and cache it
-  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  echo "${BLUE}→${NC} Installing Homebrew... (requires admin password)"
+  sudo -v
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" >/dev/null
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
@@ -55,14 +54,14 @@ echo "${BLUE}✓${NC} Homebrew"
 # Go
 if [[ ! -x "$(brew --prefix)/bin/go" ]]; then
   echo "${BLUE}→${NC} Installing Go..."
-  brew install go
+  brew install -q go
 fi
 echo "${BLUE}✓${NC} Go"
 
 # Convert tarball to git repo if needed
 if [[ ! -d "$REPO_DIR/.git" ]]; then
-  echo "${BLUE}→${NC} Setting up git repo..."
-  local tmp_dir=$(mktemp -d)
+  echo "${BLUE}→${NC} Setting up repo..."
+  tmp_dir=$(mktemp -d)
   git clone --quiet "https://github.com/schmoli/macos-setup.git" "$tmp_dir"
   rm -rf "$REPO_DIR"
   mv "$tmp_dir" "$REPO_DIR"
@@ -72,7 +71,7 @@ echo "${BLUE}✓${NC} Repo"
 # Build
 echo "${BLUE}→${NC} Building..."
 mkdir -p "$(dirname "$BINARY")"
-(cd "$REPO_DIR" && go mod tidy && go build -o "$BINARY" ./cmd/macos-setup/)
+(cd "$REPO_DIR" && go mod tidy >/dev/null 2>&1 && go build -o "$BINARY" ./cmd/macos-setup/)
 echo "${BLUE}✓${NC} Built"
 
 echo ""
