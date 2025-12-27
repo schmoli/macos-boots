@@ -381,6 +381,30 @@ func (m model) addWithDeps(name string, list []string, seen map[string]bool) []s
 	return list
 }
 
+// selectDeps selects all dependencies of an app in the UI
+func (m *model) selectDeps(name string) {
+	if m.config == nil {
+		return
+	}
+	app, ok := m.config.Apps[name]
+	if !ok {
+		return
+	}
+
+	for _, dep := range app.Depends {
+		// Find and select the dep in any category
+		for catIdx := range m.categories {
+			for appIdx := range m.categories[catIdx].apps {
+				if m.categories[catIdx].apps[appIdx].name == dep {
+					m.categories[catIdx].apps[appIdx].selected = true
+					// Recursively select deps of deps
+					m.selectDeps(dep)
+				}
+			}
+		}
+	}
+}
+
 func (m model) handleInstallComplete(msg installCompleteMsg) (tea.Model, tea.Cmd) {
 	cat := &m.categories[m.cursor]
 
@@ -476,7 +500,12 @@ func (m model) updateInCategory(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.appCursor++
 		}
 	case key.Matches(msg, keys.Space):
-		m.categories[m.cursor].apps[m.appCursor].selected = !m.categories[m.cursor].apps[m.appCursor].selected
+		app := &m.categories[m.cursor].apps[m.appCursor]
+		app.selected = !app.selected
+		// If selecting, also select dependencies
+		if app.selected {
+			m.selectDeps(app.name)
+		}
 	case key.Matches(msg, keys.SelectAll):
 		// Toggle: if any unselected, select all; otherwise deselect all
 		anyUnselected := false
