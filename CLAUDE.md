@@ -12,7 +12,9 @@ Work happens here (local dev machine). Testing on Parallels VM with fresh macOS 
    curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/$(git rev-parse --short HEAD)/install.sh | zsh
    ```
    GitHub CDN caches `/main/install.sh` for 5-60min. Commit SHA URLs fetch fresh.
-4. On Parallels VM: `macos-setup update` (auto-pulls) or fresh install
+4. On Parallels VM: Run any `macos-setup` command (auto-pulls latest changes) or fresh install
+   - Auto-pull happens on every command execution
+   - `macos-setup update` upgrades installed packages (not repo update)
 
 ## Project Structure
 
@@ -26,15 +28,17 @@ Each app folder:
 
 ```yaml
 # app.yaml (required)
-install: brew|cask|mas
-description: Short desc
-post_install:               # Optional: one-time commands
+install: brew|cask|npm|mas     # Required
+description: Short desc         # Required
+package: npm-package-name       # Optional: if != folder name
+depends:                        # Optional: dependencies
+  - other-app
+post_install:                   # Optional: one-time commands
   - command here
-depends_on: other-app       # Optional
 ```
 
 ```zsh
-# init.zsh (optional) - sourced in shell
+# init.zsh (optional) - auto-sourced in shell
 eval "$(tool init zsh)"
 alias x='tool'
 ```
