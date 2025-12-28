@@ -37,3 +37,4 @@ Log of apps added via `/add-app` skill.
 2025-12-28 | android-studio | dev | Android IDE
 2025-12-28 | betterdisplay | apps | display management tool
 2025-12-28 | localsend | dev | moved from apps
+2025-12-28 | openjdk | dev | Java development kit
