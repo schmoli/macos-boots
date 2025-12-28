@@ -75,6 +75,8 @@ func main() {
 		runErr = runInstall(cfg, "cli")
 	case "apps":
 		runErr = runInstall(cfg, "apps")
+	case "dev":
+		runErr = runInstall(cfg, "dev")
 	case "docker":
 		runErr = runInstall(cfg, "docker")
 	case "git":
@@ -154,6 +156,7 @@ func printHelp() {
 	fmt.Println("  boots all          Install all apps")
 	fmt.Println("  boots cli          Install CLI tools")
 	fmt.Println("  boots apps         Install desktop apps")
+	fmt.Println("  boots dev          Install development tools")
 	fmt.Println("  boots docker       Install docker tools")
 	fmt.Println("  boots git          Install git tools")
 	fmt.Println("  boots browsers     Install browsers")

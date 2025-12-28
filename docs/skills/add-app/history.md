@@ -23,3 +23,6 @@ Log of apps added via `/add-app` skill.
 2025-12-27 | font-jetbrains-mono-nerd-font | cli | dev font with icons
 2025-12-27 | claude-code | cli | npm package
 2025-12-27 | kustomize | cli | removed
+2025-12-28 | xcode | apps | Mac App Store IDE (wip)
+2025-12-28 | apple-developer | apps | certificates and profiles (wip)
+2025-12-28 | visual-studio-code | dev | Microsoft code editor
