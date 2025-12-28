@@ -16,6 +16,6 @@ fi
 echo ""
 echo "Error: boots not installed"
 echo ""
-echo "Install: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh"
+echo "Install: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-boots/main/install.sh | zsh"
 echo ""
 exit 1

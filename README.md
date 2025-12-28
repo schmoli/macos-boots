@@ -11,7 +11,7 @@ macOS bootstrapper - CLI tool for setting up a fresh macOS developer machine.
 ## Install
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
+curl -fsSL https://raw.githubusercontent.com/schmoli/macos-boots/main/install.sh | zsh
 source ~/.zshrc
 boots cli      # Install CLI tools
 ```

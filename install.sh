@@ -1,11 +1,11 @@
 #!/bin/zsh
 # Bootstrap: downloads files, sets up PATH, checks prerequisites
-# Usage: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
+# Usage: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-boots/main/install.sh | zsh
 
 set -e
 trap 'echo ""; echo "Installation failed. Check output above."; echo ""' ERR
 
-REPO="schmoli/macos-setup"
+REPO="schmoli/macos-boots"
 REPO_DIR="$HOME/.config/boots/repo"
 BINARY_DIR="$HOME/.local/bin"
 

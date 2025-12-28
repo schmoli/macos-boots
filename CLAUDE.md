@@ -9,7 +9,7 @@ Work happens here (local dev machine). Testing on Parallels VM with fresh macOS 
 3. **For install.sh changes:** Use commit SHA URL to bypass CDN cache:
    ```zsh
    # On VM - immediate testing (bypasses GitHub CDN cache)
-   curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/$(git rev-parse --short HEAD)/install.sh | zsh
+   curl -fsSL https://raw.githubusercontent.com/schmoli/macos-boots/$(git rev-parse --short HEAD)/install.sh | zsh
    ```
    GitHub CDN caches `/main/install.sh` for 5-60min. Commit SHA URLs fetch fresh.
 4. On Parallels VM: Run any `boots` command (auto-pulls latest changes) or fresh install
