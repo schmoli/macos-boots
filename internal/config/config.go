@@ -29,7 +29,7 @@ type AppConfig struct {
 	Dest   string `yaml:"dest"`
 }
 
-// Load scans apps/<category>/<name>/app.yaml files
+// Load scans packages/<category>/<name>/app.yaml files
 func Load(appsDir string) (*Config, error) {
 	cfg := &Config{Apps: make(map[string]App)}
 

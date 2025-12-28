@@ -75,6 +75,8 @@ func main() {
 		runErr = runInstall(cfg, "cli")
 	case "apps":
 		runErr = runInstall(cfg, "apps")
+	case "git":
+		runErr = runInstall(cfg, "git")
 	case "mas":
 		runErr = runInstall(cfg, "mas")
 	case "update":
@@ -101,8 +103,8 @@ func main() {
 
 func loadConfig() (*config.Config, error) {
 	home, _ := os.UserHomeDir()
-	appsDir := filepath.Join(home, ".config", "boots", "repo", "apps")
-	return config.Load(appsDir)
+	packagesDir := filepath.Join(home, ".config", "boots", "repo", "packages")
+	return config.Load(packagesDir)
 }
 
 func runInstall(cfg *config.Config, category string) error {
@@ -148,6 +150,7 @@ func printHelp() {
 	fmt.Println("  boots all          Install all apps")
 	fmt.Println("  boots cli          Install CLI tools")
 	fmt.Println("  boots apps         Install desktop apps")
+	fmt.Println("  boots git          Install git tools")
 	fmt.Println("  boots mas          Install App Store apps")
 	fmt.Println("  boots update       Upgrade tracked apps")
 	fmt.Println("  boots help         Show this help")

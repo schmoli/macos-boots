@@ -19,9 +19,10 @@ Work happens here (local dev machine). Testing on Parallels VM with fresh macOS 
 ## Project Structure
 
 ```
-apps/
+packages/
 ├── cli/                    # brew install
-└── apps/                   # brew install --cask
+├── apps/                   # brew install --cask
+└── git/                    # git tools
 ```
 
 Each app folder:

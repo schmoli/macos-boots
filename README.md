@@ -30,6 +30,7 @@ boots          # Show install status
 boots all      # Install everything
 boots cli      # Install CLI tools only
 boots apps     # Install desktop apps only
+boots git      # Install git tools only
 boots mas      # Install App Store apps only
 boots update   # Upgrade installed apps
 boots status   # Show install status (same as no args)
@@ -42,12 +43,15 @@ boots cli -v   # Verbose mode (show command details on failure)
 ## Project Structure
 
 ```
-apps/
+packages/
 ├── cli/             # Terminal tools (brew/npm)
 │   └── <name>/
 │       ├── app.yaml     # Config (see below)
 │       └── init.zsh     # Shell setup (optional)
-└── apps/            # GUI apps (cask)
+├── apps/            # GUI apps (cask)
+│   └── <name>/
+│       └── app.yaml
+└── git/             # Git tools
     └── <name>/
         └── app.yaml
 ```
@@ -71,7 +75,7 @@ Shell integration file sourced automatically at shell startup. Use for:
 - Aliases and functions
 - Completions
 
-All `apps/*/*/init.zsh` files are auto-sourced via `~/.config/boots/init.zsh`.
+All `packages/*/*/init.zsh` files are auto-sourced via `~/.config/boots/init.zsh`.
 
 ## Adding Apps
 

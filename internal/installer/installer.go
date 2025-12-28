@@ -299,7 +299,7 @@ func configureApp(name string, app config.App) {
 	if len(app.PostInstall) > 0 {
 		// Build preamble: brew shellenv + app's init.zsh if exists
 		preamble := `eval "$(/opt/homebrew/bin/brew shellenv)" && `
-		initZsh := filepath.Join(home, ".config", "boots", "repo", "apps", app.Category, name, "init.zsh")
+		initZsh := filepath.Join(home, ".config", "boots", "repo", "packages", app.Category, name, "init.zsh")
 		if _, err := os.Stat(initZsh); err == nil {
 			preamble += fmt.Sprintf("source %s && ", initZsh)
 		}
@@ -326,7 +326,7 @@ func EnsureShellIntegration() error {
 # Ensure compinit is loaded for completions
 autoload -Uz compinit && compinit -C
 
-for f in ~/.config/boots/repo/apps/*/*/init.zsh(N); do
+for f in ~/.config/boots/repo/packages/*/*/init.zsh(N); do
   source "$f"
 done
 `
@@ -575,7 +575,7 @@ func Status(cfg *config.Config) {
 		BorderForeground(lipgloss.Color("#0066FF")).
 		Padding(0, 1)
 
-	categories := []string{"cli", "apps", "mas"}
+	categories := []string{"cli", "apps", "git", "mas"}
 	var sections []string
 
 	for _, cat := range categories {
