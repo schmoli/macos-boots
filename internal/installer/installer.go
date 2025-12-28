@@ -559,11 +559,11 @@ func Status(cfg *config.Config) {
 	// Styles
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("205")).
+		Foreground(lipgloss.Color("#00D9FF")).
 		PaddingLeft(1)
 
 	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("86")).
+		Foreground(lipgloss.Color("#0088FF")).
 		Width(14).
 		PaddingLeft(2)
 
@@ -572,7 +572,7 @@ func Status(cfg *config.Config) {
 
 	borderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
+		BorderForeground(lipgloss.Color("#0066FF")).
 		Padding(0, 1)
 
 	categories := []string{"cli", "apps", "mas"}
