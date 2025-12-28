@@ -39,7 +39,7 @@ echo "${CYAN}  ┏┓ ┏━┓┏━┓╺┳╸┏━┓${NC}"
 echo "${CYAN}  ┣┻┓┃ ┃┃ ┃ ┃ ┗━┓${NC}"
 echo "${CYAN}  ┗━┛┗━┛┗━┛ ╹ ┗━┛${NC}"
 echo ""
-echo "${DIM}macOS Bootstrapper - Installation${NC}"
+echo "${DIM}macOS bootstrapper - Installation${NC}"
 echo ""
 
 # Install Go

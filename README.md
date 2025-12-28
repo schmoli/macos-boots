@@ -5,7 +5,7 @@
   ┗━┛┗━┛┗━┛ ╹ ┗━┛
 ```
 
-**macOS Bootstrapper** - Get your dev machine up and running in minutes.
+**macOS bootstrapper** - Get your dev machine up and running in minutes.
 
 ## Requirements
 
