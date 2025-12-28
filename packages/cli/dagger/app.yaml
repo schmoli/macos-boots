@@ -1,0 +1,2 @@
+install: brew
+description: Portable devkit for CI/CD pipelines
