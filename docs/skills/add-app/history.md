@@ -30,3 +30,4 @@ Log of apps added via `/add-app` skill.
 2025-12-28 | 1password | apps | password manager
 2025-12-28 | xcodegen | cli | Xcode project generator
 2025-12-28 | dagger | cli | CI/CD devkit
+2025-12-28 | devcockpit | cli | Apple Silicon system monitor

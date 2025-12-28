@@ -1,0 +1,2 @@
+install: brew
+description: TUI system monitor for Apple Silicon
