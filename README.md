@@ -17,11 +17,7 @@
 
 ```zsh
 curl -fsSL https://raw.githubusercontent.com/schmoli/macos-boots/main/install.sh | zsh
-source ~/.zshrc
-boots cli      # Install CLI tools
 ```
-
-First-run bootstrap (Go, fnm, Node, build) happens during curl | sh.
 
 ## Commands
 
