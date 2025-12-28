@@ -5,11 +5,29 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/schmoli/macos-setup/internal/config"
 	"github.com/schmoli/macos-setup/internal/installer"
 )
 
 var verbose bool
+
+func printBanner() {
+	// Gradient styles: cyan -> blue
+	line1Style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00D9FF"))
+	line2Style := lipgloss.NewStyle().Foreground(lipgloss.Color("#0088FF"))
+	line3Style := lipgloss.NewStyle().Foreground(lipgloss.Color("#0066FF"))
+	subtitleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+
+	fmt.Println()
+	fmt.Println(line1Style.Render("❯ boots"))
+	fmt.Println(line1Style.Render("  ┏┓ ┏━┓┏━┓╺┳╸┏━┓"))
+	fmt.Println(line2Style.Render("  ┣┻┓┃ ┃┃ ┃ ┃ ┗━┓"))
+	fmt.Println(line3Style.Render("  ┗━┛┗━┛┗━┛ ╹ ┗━┛"))
+	fmt.Println()
+	fmt.Println(subtitleStyle.Render("  macOS bootstrapper"))
+	fmt.Println()
+}
 
 func main() {
 	// Parse flags and command
@@ -26,6 +44,9 @@ func main() {
 	if len(args) > 0 {
 		cmd = args[0]
 	}
+
+	// Show banner
+	printBanner()
 
 	// Handle help without loading config
 	if cmd == "help" || cmd == "--help" || cmd == "-h" {
