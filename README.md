@@ -1,6 +1,13 @@
-# boots
+```
+ ____              _
+|  _ \            | |
+| |_) | ___   ___ | |_ ___
+|  _ < / _ \ / _ \| __/ __|
+| |_) | (_) | (_) | |_\__ \
+|____/ \___/ \___/ \__|___/
+```
 
-macOS bootstrapper - CLI tool for setting up a fresh macOS developer machine.
+**macOS Bootstrapper** - Get your dev machine up and running in minutes.
 
 ## Requirements
 
