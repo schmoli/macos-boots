@@ -468,7 +468,7 @@ func AutoPull() bool {
 
 	// Rebuild binary
 	LogProgress("Rebuilding...")
-	binary := filepath.Join(repoDir, "bin", "boots")
+	binary := filepath.Join(home, ".config", "boots", "bin", "boots")
 	buildCmd := exec.Command("go", "build", "-o", binary, "./cmd/macos-setup/")
 	buildCmd.Dir = filepath.Join(repoDir, "go")
 	if err := buildCmd.Run(); err != nil {

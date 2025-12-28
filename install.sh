@@ -7,7 +7,7 @@ trap 'echo ""; echo "Installation failed. Check output above."; echo ""' ERR
 
 REPO="schmoli/macos-boots"
 REPO_DIR="$HOME/.config/boots/repo"
-BINARY_DIR="$HOME/.local/bin"
+BINARY_DIR="$HOME/.config/boots/bin"
 
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
@@ -87,19 +87,10 @@ echo "${GREEN}✅ Repo${NC}"
 
 # Build binary
 echo "${CYAN}⏳ Building...${NC}"
-BINARY="$REPO_DIR/bin/boots"
-mkdir -p "$(dirname "$BINARY")"
+BINARY="$BINARY_DIR/boots"
+mkdir -p "$BINARY_DIR"
 (cd "$REPO_DIR/go" && go mod tidy >/dev/null 2>&1 && go build -o "$BINARY" ./cmd/macos-setup/)
 echo "${GREEN}✅ Built${NC}"
-
-# Create wrapper script
-mkdir -p "$BINARY_DIR"
-cat > "$BINARY_DIR/boots" << 'WRAPPER'
-#!/bin/zsh
-exec "$HOME/.config/boots/repo/scripts/setup.sh" "$@"
-WRAPPER
-chmod +x "$BINARY_DIR/boots"
-echo "${GREEN}✅ Wrapper${NC}"
 
 # Add to PATH if needed
 if ! grep -q "$BINARY_DIR" ~/.zshrc 2>/dev/null; then
