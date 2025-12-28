@@ -4,8 +4,8 @@
 
 set -e
 
-REPO_DIR="$HOME/.config/macos-setup/repo"
-BINARY="$REPO_DIR/bin/macos-setup"
+REPO_DIR="$HOME/.config/boots/repo"
+BINARY="$REPO_DIR/bin/boots"
 
 # Just exec the binary if it exists
 if [[ -x "$BINARY" ]]; then
@@ -14,7 +14,7 @@ fi
 
 # Binary missing - installation incomplete
 echo ""
-echo "Error: macos-setup not installed"
+echo "Error: boots not installed"
 echo ""
 echo "Install: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh"
 echo ""

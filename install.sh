@@ -6,7 +6,7 @@ set -e
 trap 'echo ""; echo "Installation failed. Check output above."; echo ""' ERR
 
 REPO="schmoli/macos-setup"
-REPO_DIR="$HOME/.config/macos-setup/repo"
+REPO_DIR="$HOME/.config/boots/repo"
 BINARY_DIR="$HOME/.local/bin"
 
 GREEN='\033[0;32m'
@@ -34,8 +34,8 @@ fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 echo ""
-echo "${GREEN}macos-setup${NC} - Installation"
-echo "=========================="
+echo "${GREEN}boots${NC} - macOS Bootstrapper"
+echo "======================="
 echo ""
 
 # Install Go
@@ -83,26 +83,26 @@ echo "${GREEN}✅ Repo${NC}"
 
 # Build binary
 echo "${CYAN}⏳ Building...${NC}"
-BINARY="$REPO_DIR/bin/macos-setup"
+BINARY="$REPO_DIR/bin/boots"
 mkdir -p "$(dirname "$BINARY")"
 (cd "$REPO_DIR" && go mod tidy >/dev/null 2>&1 && go build -o "$BINARY" ./cmd/macos-setup/)
 echo "${GREEN}✅ Built${NC}"
 
 # Create wrapper script
 mkdir -p "$BINARY_DIR"
-cat > "$BINARY_DIR/macos-setup" << 'WRAPPER'
+cat > "$BINARY_DIR/boots" << 'WRAPPER'
 #!/bin/zsh
-exec "$HOME/.config/macos-setup/repo/setup.sh" "$@"
+exec "$HOME/.config/boots/repo/setup.sh" "$@"
 WRAPPER
-chmod +x "$BINARY_DIR/macos-setup"
+chmod +x "$BINARY_DIR/boots"
 echo "${GREEN}✅ Wrapper${NC}"
 
 # Add to PATH if needed
 if ! grep -q "$BINARY_DIR" ~/.zshrc 2>/dev/null; then
   echo "" >> ~/.zshrc
-  echo "# macos-setup" >> ~/.zshrc
+  echo "# boots" >> ~/.zshrc
   echo "export PATH=\"$BINARY_DIR:\$PATH\"" >> ~/.zshrc
-  echo "${GREEN}✅ Added macos-setup to ~/.zshrc${NC}"
+  echo "${GREEN}✅ Added boots to ~/.zshrc${NC}"
 fi
 
 # Add fnm to zshrc if needed
@@ -121,5 +121,5 @@ echo ""
 echo "Next steps:"
 echo ""
 echo "    source ~/.zshrc"
-echo "    macos-setup cli    # Install CLI tools"
+echo "    boots cli    # Install CLI tools"
 echo ""

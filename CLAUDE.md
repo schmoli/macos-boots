@@ -1,4 +1,4 @@
-# macos-setup Development
+# boots Development
 
 ## Workflow
 
@@ -12,9 +12,9 @@ Work happens here (local dev machine). Testing on Parallels VM with fresh macOS 
    curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/$(git rev-parse --short HEAD)/install.sh | zsh
    ```
    GitHub CDN caches `/main/install.sh` for 5-60min. Commit SHA URLs fetch fresh.
-4. On Parallels VM: Run any `macos-setup` command (auto-pulls latest changes) or fresh install
+4. On Parallels VM: Run any `boots` command (auto-pulls latest changes) or fresh install
    - Auto-pull happens on every command execution
-   - `macos-setup update` upgrades installed packages (not repo update)
+   - `boots update` upgrades installed packages (not repo update)
 
 ## Project Structure
 

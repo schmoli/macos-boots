@@ -1,6 +1,6 @@
 ---
 name: add-app
-description: Add a new app to macos-setup with fuzzy matching, dep inference, auto-commit
+description: Add a new app to boots with fuzzy matching, dep inference, auto-commit
 ---
 
 ## Syntax

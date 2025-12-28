@@ -1,6 +1,6 @@
-# macos-setup
+# boots
 
-CLI tool for setting up a fresh macOS developer machine.
+macOS bootstrapper - CLI tool for setting up a fresh macOS developer machine.
 
 ## Requirements
 
@@ -13,7 +13,7 @@ CLI tool for setting up a fresh macOS developer machine.
 ```zsh
 curl -fsSL https://raw.githubusercontent.com/schmoli/macos-setup/main/install.sh | zsh
 source ~/.zshrc
-macos-setup cli      # Install CLI tools
+boots cli      # Install CLI tools
 ```
 
 First-run bootstrap (Go, fnm, Node, build) happens during curl | sh.
@@ -21,17 +21,17 @@ First-run bootstrap (Go, fnm, Node, build) happens during curl | sh.
 ## Commands
 
 ```zsh
-macos-setup          # Show install status
-macos-setup all      # Install everything
-macos-setup cli      # Install CLI tools only
-macos-setup apps     # Install desktop apps only
-macos-setup mas      # Install App Store apps only
-macos-setup update   # Upgrade installed apps
-macos-setup status   # Show install status (same as no args)
-macos-setup help     # Show help
+boots          # Show install status
+boots all      # Install everything
+boots cli      # Install CLI tools only
+boots apps     # Install desktop apps only
+boots mas      # Install App Store apps only
+boots update   # Upgrade installed apps
+boots status   # Show install status (same as no args)
+boots help     # Show help
 
 # Flags
-macos-setup cli -v   # Verbose mode (show command details on failure)
+boots cli -v   # Verbose mode (show command details on failure)
 ```
 
 ## Project Structure
@@ -66,7 +66,7 @@ Shell integration file sourced automatically at shell startup. Use for:
 - Aliases and functions
 - Completions
 
-All `apps/*/*/init.zsh` files are auto-sourced via `~/.config/macos-setup/init.zsh`.
+All `apps/*/*/init.zsh` files are auto-sourced via `~/.config/boots/init.zsh`.
 
 ## Adding Apps
 
@@ -81,8 +81,8 @@ Use `/add-app` in Claude Code:
 ## Uninstall
 
 ```zsh
-rm -rf ~/.config/macos-setup
-rm -f ~/.local/bin/macos-setup
+rm -rf ~/.config/boots
+rm -f ~/.local/bin/boots
 ```
 
 Remove the PATH line from `~/.zshrc` if desired.

@@ -1,6 +1,6 @@
 # Binaries (root level only)
-/macos-setup
-/macos-setup-darwin-arm64
+/boots
+/boots-darwin-arm64
 *.exe
 
 # Build output

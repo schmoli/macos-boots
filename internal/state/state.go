@@ -14,7 +14,7 @@ type State struct {
 
 func statePath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "macos-setup", "state.yaml")
+	return filepath.Join(home, ".config", "boots", "state.yaml")
 }
 
 func Load() (*State, error) {

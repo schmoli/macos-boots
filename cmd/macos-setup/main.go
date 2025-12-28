@@ -80,7 +80,7 @@ func main() {
 
 func loadConfig() (*config.Config, error) {
 	home, _ := os.UserHomeDir()
-	appsDir := filepath.Join(home, ".config", "macos-setup", "repo", "apps")
+	appsDir := filepath.Join(home, ".config", "boots", "repo", "apps")
 	return config.Load(appsDir)
 }
 
@@ -120,16 +120,16 @@ func runInstall(cfg *config.Config, category string) error {
 }
 
 func printHelp() {
-	fmt.Println("macos-setup - fast macOS setup")
+	fmt.Println("boots - macOS bootstrapper")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  macos-setup              Show status")
-	fmt.Println("  macos-setup all          Install all apps")
-	fmt.Println("  macos-setup cli          Install CLI tools")
-	fmt.Println("  macos-setup apps         Install desktop apps")
-	fmt.Println("  macos-setup mas          Install App Store apps")
-	fmt.Println("  macos-setup update       Upgrade tracked apps")
-	fmt.Println("  macos-setup help         Show this help")
+	fmt.Println("  boots              Show status")
+	fmt.Println("  boots all          Install all apps")
+	fmt.Println("  boots cli          Install CLI tools")
+	fmt.Println("  boots apps         Install desktop apps")
+	fmt.Println("  boots mas          Install App Store apps")
+	fmt.Println("  boots update       Upgrade tracked apps")
+	fmt.Println("  boots help         Show this help")
 	fmt.Println()
 	fmt.Println("Flags:")
 	fmt.Println("  -v, --verbose    Show command details on failure")

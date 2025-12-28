@@ -92,7 +92,7 @@ func GenerateBrewfile(apps map[string]config.App) (string, error) {
 		return "", nil
 	}
 
-	tmpFile := "/tmp/macos-setup-Brewfile"
+	tmpFile := "/tmp/boots-Brewfile"
 	content := strings.Join(lines, "\n") + "\n"
 	if err := os.WriteFile(tmpFile, []byte(content), 0644); err != nil {
 		return "", err
@@ -299,7 +299,7 @@ func configureApp(name string, app config.App) {
 	if len(app.PostInstall) > 0 {
 		// Build preamble: brew shellenv + app's init.zsh if exists
 		preamble := `eval "$(/opt/homebrew/bin/brew shellenv)" && `
-		initZsh := filepath.Join(home, ".config", "macos-setup", "repo", "apps", app.Category, name, "init.zsh")
+		initZsh := filepath.Join(home, ".config", "boots", "repo", "apps", app.Category, name, "init.zsh")
 		if _, err := os.Stat(initZsh); err == nil {
 			preamble += fmt.Sprintf("source %s && ", initZsh)
 		}
@@ -318,15 +318,15 @@ func configureApp(name string, app config.App) {
 // EnsureShellIntegration ensures ~/.zshrc sources the repo init files
 func EnsureShellIntegration() error {
 	home, _ := os.UserHomeDir()
-	baseDir := filepath.Join(home, ".config", "macos-setup")
+	baseDir := filepath.Join(home, ".config", "boots")
 
 	// Write init.zsh that sources from repo
 	initPath := filepath.Join(baseDir, "init.zsh")
-	initContent := `# macos-setup shell integration (auto-generated)
+	initContent := `# boots shell integration (auto-generated)
 # Ensure compinit is loaded for completions
 autoload -Uz compinit && compinit -C
 
-for f in ~/.config/macos-setup/repo/apps/*/*/init.zsh(N); do
+for f in ~/.config/boots/repo/apps/*/*/init.zsh(N); do
   source "$f"
 done
 `
@@ -340,13 +340,13 @@ done
 	// Ensure .zshrc sources init.zsh
 	zshrcPath := filepath.Join(home, ".zshrc")
 	existing, _ := os.ReadFile(zshrcPath)
-	sourceLine := "source ~/.config/macos-setup/init.zsh"
+	sourceLine := "source ~/.config/boots/init.zsh"
 	if !strings.Contains(string(existing), sourceLine) {
 		f, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
 		}
-		f.WriteString(fmt.Sprintf("\n# macos-setup\n%s\n", sourceLine))
+		f.WriteString(fmt.Sprintf("\n# boots\n%s\n", sourceLine))
 		f.Close()
 
 		// Mark zshrc modified
@@ -360,7 +360,7 @@ done
 // CheckZshrcModified returns true if zshrc was modified, clears the marker
 func CheckZshrcModified() bool {
 	home, _ := os.UserHomeDir()
-	markerPath := filepath.Join(home, ".config", "macos-setup", ".zshrc-modified")
+	markerPath := filepath.Join(home, ".config", "boots", ".zshrc-modified")
 	if _, err := os.Stat(markerPath); err == nil {
 		os.Remove(markerPath)
 		return true
@@ -371,7 +371,7 @@ func CheckZshrcModified() bool {
 // AutoPull fetches and pulls from origin if behind, returns true if pulled
 func AutoPull() bool {
 	home, _ := os.UserHomeDir()
-	repoDir := filepath.Join(home, ".config", "macos-setup", "repo")
+	repoDir := filepath.Join(home, ".config", "boots", "repo")
 
 	// Reset go files to avoid pull conflicts from go mod tidy
 	resetCmd := exec.Command("git", "checkout", "go.mod", "go.sum")
@@ -438,7 +438,7 @@ func AutoPull() bool {
 
 	// Rebuild binary
 	LogProgress("Rebuilding...")
-	binary := filepath.Join(repoDir, "bin", "macos-setup")
+	binary := filepath.Join(repoDir, "bin", "boots")
 	buildCmd := exec.Command("go", "build", "-o", binary, "./cmd/macos-setup/")
 	buildCmd.Dir = repoDir
 	if err := buildCmd.Run(); err != nil {
