@@ -319,17 +319,47 @@ func configureApp(name string, app config.App) {
 func EnsureShellIntegration() error {
 	home, _ := os.UserHomeDir()
 	baseDir := filepath.Join(home, ".config", "boots")
+	repoDir := filepath.Join(baseDir, "repo")
+	packagesDir := filepath.Join(repoDir, "packages")
 
-	// Write init.zsh that sources from repo
-	initPath := filepath.Join(baseDir, "init.zsh")
+	// Load state to get installed apps
+	s, err := state.Load()
+	if err != nil {
+		return err
+	}
+
+	// Load config to get app categories
+	cfg, err := config.Load(packagesDir)
+	if err != nil {
+		return err
+	}
+
+	// Build init.zsh content with explicit source commands for installed apps only
+	var sources []string
+	for appName := range s.Installed {
+		app, ok := cfg.Apps[appName]
+		if !ok {
+			continue
+		}
+
+		initZshPath := filepath.Join(packagesDir, app.Category, appName, "init.zsh")
+		if _, err := os.Stat(initZshPath); err == nil {
+			// Use absolute path for reliability
+			sources = append(sources, fmt.Sprintf("source %s", initZshPath))
+		}
+	}
+
 	initContent := `# boots shell integration (auto-generated)
 # Ensure compinit is loaded for completions
 autoload -Uz compinit && compinit -C
 
-for f in ~/.config/boots/repo/packages/*/*/init.zsh(N); do
-  source "$f"
-done
 `
+	if len(sources) > 0 {
+		initContent += strings.Join(sources, "\n") + "\n"
+	}
+
+	// Write init.zsh
+	initPath := filepath.Join(baseDir, "init.zsh")
 	if err := os.MkdirAll(baseDir, 0755); err != nil {
 		return err
 	}
