@@ -34,3 +34,6 @@ Log of apps added via `/add-app` skill.
 2025-12-28 | reflector | dev | screen mirroring receiver
 2025-12-28 | parallels | dev | desktop virtualization
 2025-12-28 | postico | dev | PostgreSQL client
+2025-12-28 | android-studio | dev | Android IDE
+2025-12-28 | betterdisplay | apps | display management tool
+2025-12-28 | localsend | dev | moved from apps
