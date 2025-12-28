@@ -34,8 +34,12 @@ fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 echo ""
-echo "${GREEN}boots${NC} - macOS Bootstrapper"
-echo "======================="
+echo "${CYAN}❯ boots${NC}"
+echo "${CYAN}  ┏┓ ┏━┓┏━┓╺┳╸┏━┓${NC}"
+echo "${CYAN}  ┣┻┓┃ ┃┃ ┃ ┃ ┗━┓${NC}"
+echo "${CYAN}  ┗━┛┗━┛┗━┛ ╹ ┗━┛${NC}"
+echo ""
+echo "${DIM}macOS Bootstrapper - Installation${NC}"
 echo ""
 
 # Install Go
