@@ -1,0 +1,2 @@
+install: cask
+description: PostgreSQL client for macOS
