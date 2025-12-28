@@ -26,6 +26,7 @@ boots          # Show install status
 boots all      # Install everything
 boots cli      # Install CLI tools only
 boots apps     # Install desktop apps only
+boots docker   # Install docker tools only
 boots git      # Install git tools only
 boots mas      # Install App Store apps only
 boots update   # Upgrade installed apps
@@ -45,6 +46,9 @@ packages/
 │       ├── app.yaml     # Config (see below)
 │       └── init.zsh     # Shell setup (optional)
 ├── apps/            # GUI apps (cask)
+│   └── <name>/
+│       └── app.yaml
+├── docker/          # Docker tools
 │   └── <name>/
 │       └── app.yaml
 └── git/             # Git tools

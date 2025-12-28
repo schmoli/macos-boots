@@ -612,7 +612,7 @@ func Status(cfg *config.Config) {
 		BorderForeground(lipgloss.Color("#0066FF")).
 		Padding(0, 1)
 
-	categories := []string{"cli", "apps", "git", "mas"}
+	categories := []string{"cli", "apps", "docker", "git", "mas"}
 	var sections []string
 
 	for _, cat := range categories {
