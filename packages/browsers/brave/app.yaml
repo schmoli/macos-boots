@@ -1,0 +1,3 @@
+install: cask
+description: Privacy-focused browser with ad blocking
+package: brave-browser

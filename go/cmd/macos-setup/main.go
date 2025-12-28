@@ -79,6 +79,8 @@ func main() {
 		runErr = runInstall(cfg, "docker")
 	case "git":
 		runErr = runInstall(cfg, "git")
+	case "browsers":
+		runErr = runInstall(cfg, "browsers")
 	case "mas":
 		runErr = runInstall(cfg, "mas")
 	case "update":
@@ -154,6 +156,7 @@ func printHelp() {
 	fmt.Println("  boots apps         Install desktop apps")
 	fmt.Println("  boots docker       Install docker tools")
 	fmt.Println("  boots git          Install git tools")
+	fmt.Println("  boots browsers     Install browsers")
 	fmt.Println("  boots mas          Install App Store apps")
 	fmt.Println("  boots update       Upgrade tracked apps")
 	fmt.Println("  boots help         Show this help")
