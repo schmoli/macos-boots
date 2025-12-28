@@ -350,6 +350,13 @@ func EnsureShellIntegration() error {
 	}
 
 	initContent := `# boots shell integration (auto-generated)
+
+# Add boots to PATH
+export PATH="$HOME/.config/boots/bin:$PATH"
+
+# fnm initialization
+eval "$(fnm env --use-on-cd)"
+
 # Ensure compinit is loaded for completions
 autoload -Uz compinit && compinit -C
 
@@ -367,16 +374,16 @@ autoload -Uz compinit && compinit -C
 		return err
 	}
 
-	// Ensure .zshrc sources init.zsh
+	// Ensure .zshrc sources init.zsh (with conditional)
 	zshrcPath := filepath.Join(home, ".zshrc")
 	existing, _ := os.ReadFile(zshrcPath)
-	sourceLine := "source ~/.config/boots/init.zsh"
+	sourceLine := "[[ -f ~/.config/boots/init.zsh ]] && source ~/.config/boots/init.zsh"
 	if !strings.Contains(string(existing), sourceLine) {
 		f, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
 		}
-		f.WriteString(fmt.Sprintf("\n# boots\n%s\n", sourceLine))
+		f.WriteString(fmt.Sprintf("\n%s\n", sourceLine))
 		f.Close()
 
 		// Mark zshrc modified

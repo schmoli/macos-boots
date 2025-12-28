@@ -92,20 +92,24 @@ mkdir -p "$BINARY_DIR"
 (cd "$REPO_DIR/go" && go mod tidy >/dev/null 2>&1 && go build -o "$BINARY" ./cmd/macos-setup/)
 echo "${GREEN}✅ Built${NC}"
 
-# Add to PATH if needed
-if ! grep -q "$BINARY_DIR" ~/.zshrc 2>/dev/null; then
-  echo "" >> ~/.zshrc
-  echo "# boots" >> ~/.zshrc
-  echo "export PATH=\"$BINARY_DIR:\$PATH\"" >> ~/.zshrc
-  echo "${GREEN}✅ Added boots to ~/.zshrc${NC}"
-fi
+# Create initial init.zsh (will be updated by boots when apps installed)
+INIT_ZSH="$HOME/.config/boots/init.zsh"
+cat > "$INIT_ZSH" << 'INIT'
+# boots shell integration (auto-generated)
 
-# Add fnm to zshrc if needed
-if ! grep -q 'fnm env --use-on-cd' ~/.zshrc 2>/dev/null; then
+# Add boots to PATH
+export PATH="$HOME/.config/boots/bin:$PATH"
+
+# fnm initialization
+eval "$(fnm env --use-on-cd)"
+INIT
+
+# Add boots integration to zshrc if needed
+BOOTS_LINE='[[ -f ~/.config/boots/init.zsh ]] && source ~/.config/boots/init.zsh'
+if ! grep -q "boots/init.zsh" ~/.zshrc 2>/dev/null; then
   echo "" >> ~/.zshrc
-  echo "# fnm" >> ~/.zshrc
-  echo 'eval "$(fnm env --use-on-cd)"' >> ~/.zshrc
-  echo "${GREEN}✅ Added fnm to ~/.zshrc${NC}"
+  echo "$BOOTS_LINE" >> ~/.zshrc
+  echo "${GREEN}✅ Added boots to ~/.zshrc${NC}"
 fi
 
 echo ""
