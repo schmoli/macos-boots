@@ -89,14 +89,14 @@ echo "${GREEN}✅ Repo${NC}"
 echo "${CYAN}⏳ Building...${NC}"
 BINARY="$REPO_DIR/bin/boots"
 mkdir -p "$(dirname "$BINARY")"
-(cd "$REPO_DIR" && go mod tidy >/dev/null 2>&1 && go build -o "$BINARY" ./cmd/macos-setup/)
+(cd "$REPO_DIR/go" && go mod tidy >/dev/null 2>&1 && go build -o "$BINARY" ./cmd/macos-setup/)
 echo "${GREEN}✅ Built${NC}"
 
 # Create wrapper script
 mkdir -p "$BINARY_DIR"
 cat > "$BINARY_DIR/boots" << 'WRAPPER'
 #!/bin/zsh
-exec "$HOME/.config/boots/repo/setup.sh" "$@"
+exec "$HOME/.config/boots/repo/scripts/setup.sh" "$@"
 WRAPPER
 chmod +x "$BINARY_DIR/boots"
 echo "${GREEN}✅ Wrapper${NC}"

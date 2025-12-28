@@ -404,7 +404,7 @@ func AutoPull() bool {
 	repoDir := filepath.Join(home, ".config", "boots", "repo")
 
 	// Reset go files to avoid pull conflicts from go mod tidy
-	resetCmd := exec.Command("git", "checkout", "go.mod", "go.sum")
+	resetCmd := exec.Command("git", "checkout", "go/go.mod", "go/go.sum")
 	resetCmd.Dir = repoDir
 	resetCmd.Run()
 
@@ -470,7 +470,7 @@ func AutoPull() bool {
 	LogProgress("Rebuilding...")
 	binary := filepath.Join(repoDir, "bin", "boots")
 	buildCmd := exec.Command("go", "build", "-o", binary, "./cmd/macos-setup/")
-	buildCmd.Dir = repoDir
+	buildCmd.Dir = filepath.Join(repoDir, "go")
 	if err := buildCmd.Run(); err != nil {
 		LogFail("Rebuild failed: " + err.Error())
 		return true
