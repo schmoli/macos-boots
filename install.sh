@@ -108,6 +108,7 @@ INIT
 BOOTS_LINE='[[ -f ~/.config/boots/init.zsh ]] && source ~/.config/boots/init.zsh'
 if ! grep -q "boots/init.zsh" ~/.zshrc 2>/dev/null; then
   echo "" >> ~/.zshrc
+  echo "# boots" >> ~/.zshrc
   echo "$BOOTS_LINE" >> ~/.zshrc
   echo "${GREEN}✅ Added boots to ~/.zshrc${NC}"
 fi

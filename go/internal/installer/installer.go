@@ -383,7 +383,7 @@ autoload -Uz compinit && compinit -C
 		if err != nil {
 			return err
 		}
-		f.WriteString(fmt.Sprintf("\n%s\n", sourceLine))
+		f.WriteString(fmt.Sprintf("\n# boots\n%s\n", sourceLine))
 		f.Close()
 
 		// Mark zshrc modified
