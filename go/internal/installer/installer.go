@@ -354,8 +354,8 @@ func EnsureShellIntegration() error {
 # Add boots to PATH
 export PATH="$HOME/.config/boots/bin:$PATH"
 
-# fnm initialization
-eval "$(fnm env --use-on-cd)"
+# mise initialization
+eval "$(mise activate zsh)"
 
 # Ensure compinit is loaded for completions
 autoload -Uz compinit && compinit -C

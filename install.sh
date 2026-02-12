@@ -49,29 +49,31 @@ if [[ ! -x "$(brew --prefix)/bin/go" ]]; then
 fi
 echo "${GREEN}✅ Go${NC}"
 
-# Install fnm
-if [[ ! -x "$(brew --prefix)/bin/fnm" ]]; then
-  echo "${CYAN}⏳ Installing fnm...${NC}"
-  brew install -q fnm
+# Install mise
+if [[ ! -x "$(brew --prefix)/bin/mise" ]]; then
+  echo "${CYAN}⏳ Installing mise...${NC}"
+  brew install -q mise
 fi
-echo "${GREEN}✅ fnm${NC}"
+echo "${GREEN}✅ mise${NC}"
 
-# Set up fnm in this script
-eval "$(fnm env --use-on-cd)"
+# Set up mise in this script
+eval "$(mise activate zsh)"
+
+# Configure mise to recognize .node-version/.nvmrc files
+mise settings add idiomatic_version_file_enable_tools node
 
 # Install Node.js
-NODE_VERSION=24
-if ! fnm list 2>/dev/null | grep -q "v${NODE_VERSION}"; then
+NODE_VERSION=25
+if ! mise ls node 2>/dev/null | grep -q "${NODE_VERSION}"; then
   echo "${CYAN}⏳ Installing Node.js ${NODE_VERSION}...${NC}"
-  fnm install "${NODE_VERSION}"
-  fnm default "${NODE_VERSION}"
+  mise use --global node@${NODE_VERSION}
   corepack enable
 fi
 echo "${GREEN}✅ Node.js ${NODE_VERSION}${NC}"
 
 # Verify installations
 command -v go >/dev/null || { echo "Error: Go install failed"; exit 1; }
-command -v fnm >/dev/null || { echo "Error: fnm install failed"; exit 1; }
+command -v mise >/dev/null || { echo "Error: mise install failed"; exit 1; }
 command -v node >/dev/null || { echo "Error: Node install failed"; exit 1; }
 
 # Clone repo
@@ -100,8 +102,8 @@ cat > "$INIT_ZSH" << 'INIT'
 # Add boots to PATH
 export PATH="$HOME/.config/boots/bin:$PATH"
 
-# fnm initialization
-eval "$(fnm env --use-on-cd)"
+# mise initialization
+eval "$(mise activate zsh)"
 INIT
 
 # Add boots integration to zshrc if needed

@@ -66,7 +66,7 @@ eval "$(zoxide init zsh)"
 
 | App Type | Depends On |
 |----------|------------|
-| npm packages | fnm |
+| npm packages | mise |
 | docker-compose, docker-* | docker |
 | language-specific tools | their runtime (e.g., go tools → go) |
 
@@ -131,20 +131,19 @@ eval "$(zoxide init zsh)"
 
 ### Tool with dependencies and post_install
 ```
-apps/cli/fnm/app.yaml:
+apps/cli/mise/app.yaml:
 ```
 ```yaml
 install: brew
-description: Fast Node.js version manager
+description: Polyglot runtime version manager
 post_install:
-  - fnm install 24
-  - fnm default 24
+  - mise use --global node@25
 ```
 ```
-apps/cli/fnm/init.zsh:
+apps/cli/mise/init.zsh:
 ```
 ```zsh
-eval "$(fnm env --use-on-cd)"
+eval "$(mise activate zsh)"
 ```
 
 ### Mac App Store app

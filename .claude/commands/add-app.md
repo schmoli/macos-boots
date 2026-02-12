@@ -33,7 +33,7 @@ Keywords: `to`, `depends on`, `wip` (order flexible)
    - If uncertain, ask with choices: cli / apps
 
 5. **Resolve dependencies**
-   - npm packages → depends on fnm
+   - npm packages → depends on mise
    - docker-* → depends on docker
    - If uncertain or explicit `depends on` without target, ask
 
