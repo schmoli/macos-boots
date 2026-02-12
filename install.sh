@@ -2,6 +2,7 @@
 # Bootstrap: downloads files, sets up PATH, checks prerequisites
 # Usage: curl -fsSL https://raw.githubusercontent.com/schmoli/macos-boots/main/install.sh | zsh
 
+{
 set -e
 trap 'echo ""; echo "Installation failed. Check output above."; echo ""' ERR
 
@@ -125,3 +126,4 @@ echo ""
 echo "    source ~/.zshrc"
 echo "    boots"
 echo ""
+}
