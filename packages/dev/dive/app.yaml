@@ -1,4 +1,0 @@
-install: brew
-description: Explore docker image layers
-post_install:
-  - dive completion zsh > $(brew --prefix)/share/zsh/site-functions/_dive
